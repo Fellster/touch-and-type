@@ -14,7 +14,151 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      custom_fields: {
+        Row: {
+          created_at: string
+          field_type: string
+          id: string
+          key: string
+          label: string
+          sort_order: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          field_type?: string
+          id?: string
+          key: string
+          label: string
+          sort_order?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          field_type?: string
+          id?: string
+          key?: string
+          label?: string
+          sort_order?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      customers: {
+        Row: {
+          created_at: string
+          custom_data: Json
+          designers: string[]
+          email: string | null
+          id: string
+          looking_for: string[]
+          name: string
+          phone: string | null
+          shoe_size: number | null
+          typed_notes: string | null
+          updated_at: string
+          user_id: string
+          width: string | null
+        }
+        Insert: {
+          created_at?: string
+          custom_data?: Json
+          designers?: string[]
+          email?: string | null
+          id?: string
+          looking_for?: string[]
+          name: string
+          phone?: string | null
+          shoe_size?: number | null
+          typed_notes?: string | null
+          updated_at?: string
+          user_id: string
+          width?: string | null
+        }
+        Update: {
+          created_at?: string
+          custom_data?: Json
+          designers?: string[]
+          email?: string | null
+          id?: string
+          looking_for?: string[]
+          name?: string
+          phone?: string | null
+          shoe_size?: number | null
+          typed_notes?: string | null
+          updated_at?: string
+          user_id?: string
+          width?: string | null
+        }
+        Relationships: []
+      }
+      drawings: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          ocr_text: string | null
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          ocr_text?: string | null
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          ocr_text?: string | null
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drawings_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      photos: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photos_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
