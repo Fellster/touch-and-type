@@ -254,7 +254,7 @@ export default function CustomerDetail() {
         {showCanvas && (
           <Card className="p-3 mb-3">
             <DrawingCanvas
-              onSave={(b) => saveDrawing(b)}
+              onSave={async (b) => { await saveDrawing(b); }}
               onCancel={() => setShowCanvas(false)}
               onOcr={saveAndTranscribe}
             />
