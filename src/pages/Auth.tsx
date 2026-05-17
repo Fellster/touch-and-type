@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
+import SEO from "@/components/SEO";
 
 const schema = z.object({
   email: z.string().trim().email("Enter a valid email").max(255),
