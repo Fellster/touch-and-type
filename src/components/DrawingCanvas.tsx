@@ -97,18 +97,18 @@ export default function DrawingCanvas({ onSave, onCancel, onOcr }: Props) {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <Button size="sm" variant={tool === "pen" ? "default" : "outline"} onClick={() => setTool("pen")}>
+        <Button size="sm" variant={tool === "pen" ? "default" : "outline"} onClick={() => setTool("pen")} aria-label="Pen tool" aria-pressed={tool === "pen"}>
           <Pencil className="h-4 w-4" />
         </Button>
-        <Button size="sm" variant={tool === "eraser" ? "default" : "outline"} onClick={() => setTool("eraser")}>
+        <Button size="sm" variant={tool === "eraser" ? "default" : "outline"} onClick={() => setTool("eraser")} aria-label="Eraser tool" aria-pressed={tool === "eraser"}>
           <Eraser className="h-4 w-4" />
         </Button>
         <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="h-9 w-9 rounded border" aria-label="Pen color" />
         <div className="flex-1 min-w-[120px] px-2">
-          <Slider value={size} onValueChange={setSize} min={1} max={20} step={1} />
+          <Slider value={size} onValueChange={setSize} min={1} max={20} step={1} aria-label="Brush size" />
         </div>
-        <Button size="sm" variant="outline" onClick={undo}><Undo2 className="h-4 w-4" /></Button>
-        <Button size="sm" variant="outline" onClick={clear}><Trash2 className="h-4 w-4" /></Button>
+        <Button size="sm" variant="outline" onClick={undo} aria-label="Undo last stroke"><Undo2 className="h-4 w-4" /></Button>
+        <Button size="sm" variant="outline" onClick={clear} aria-label="Clear canvas"><Trash2 className="h-4 w-4" /></Button>
       </div>
       <div className="border rounded-lg bg-white overflow-hidden touch-none">
         <canvas
