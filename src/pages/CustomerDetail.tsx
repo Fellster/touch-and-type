@@ -330,6 +330,7 @@ export default function CustomerDetail() {
 
 function TagEditor({ label, values, onChange }: { label: string; values: string[]; onChange: (v: string[]) => void }) {
   const [input, setInput] = useState("");
+  const inputId = useId();
   const add = () => {
     const v = input.trim();
     if (!v) return;
@@ -338,12 +339,12 @@ function TagEditor({ label, values, onChange }: { label: string; values: string[
   };
   return (
     <div>
-      <Label>{label}</Label>
+      <Label htmlFor={inputId}>{label}</Label>
       <div className="flex flex-wrap gap-1 mb-2 mt-1">
         {values.map((v, i) => (
           <Badge key={i} variant="secondary" className="gap-1">
             {v}
-            <button onClick={() => onChange(values.filter((_, j) => j !== i))} aria-label="Remove">
+            <button onClick={() => onChange(values.filter((_, j) => j !== i))} aria-label={`Remove ${v}`}>
               <X className="h-3 w-3" />
             </button>
           </Badge>
@@ -351,23 +352,25 @@ function TagEditor({ label, values, onChange }: { label: string; values: string[
       </div>
       <div className="flex gap-2">
         <Input
+          id={inputId}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
           placeholder={`Add ${label.toLowerCase()}…`}
         />
-        <Button type="button" variant="outline" onClick={add}><Plus className="h-4 w-4" /></Button>
+        <Button type="button" variant="outline" onClick={add} aria-label={`Add ${label.toLowerCase()}`}><Plus className="h-4 w-4" /></Button>
       </div>
     </div>
   );
 }
 
 function CustomFieldInput({ field, value, onChange }: { field: CustomField; value: any; onChange: (v: any) => void }) {
+  const inputId = useId();
   if (field.field_type === "boolean") {
     return (
       <div className="flex items-center justify-between">
-        <Label>{field.label}</Label>
-        <input type="checkbox" checked={!!value} onChange={(e) => onChange(e.target.checked)} className="h-5 w-5" />
+        <Label htmlFor={inputId}>{field.label}</Label>
+        <input id={inputId} type="checkbox" checked={!!value} onChange={(e) => onChange(e.target.checked)} className="h-5 w-5" />
       </div>
     );
   }
@@ -376,8 +379,9 @@ function CustomFieldInput({ field, value, onChange }: { field: CustomField; valu
   }
   return (
     <div>
-      <Label>{field.label}</Label>
+      <Label htmlFor={inputId}>{field.label}</Label>
       <Input
+        id={inputId}
         type={field.field_type === "number" ? "number" : field.field_type === "date" ? "date" : "text"}
         value={value ?? ""}
         onChange={(e) => onChange(field.field_type === "number" ? (e.target.value === "" ? null : Number(e.target.value)) : e.target.value)}
