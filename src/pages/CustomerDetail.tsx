@@ -246,8 +246,11 @@ export default function CustomerDetail() {
       </Card>
 
       <section className="mt-6">
-        <h2 className="font-serif text-2xl mb-2">Notes</h2>
+        <h2 className="font-serif text-2xl mb-2">
+          <label htmlFor="cust-notes">Notes</label>
+        </h2>
         <Textarea
+          id="cust-notes"
           value={customer.typed_notes ?? ""}
           onChange={(e) => update({ typed_notes: e.target.value })}
           placeholder="Type any notes here…"
@@ -259,7 +262,7 @@ export default function CustomerDetail() {
         <div className="flex justify-between items-center mb-2">
           <h2 className="font-serif text-2xl">Drawings</h2>
           {!showCanvas && (
-            <Button size="sm" onClick={() => setShowCanvas(true)}>
+            <Button size="sm" onClick={() => setShowCanvas(true)} aria-label="Add new drawing">
               <Pencil className="h-4 w-4 mr-1" />New
             </Button>
           )}
@@ -276,7 +279,13 @@ export default function CustomerDetail() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {drawings.map((d) => (
             <Card key={d.id} className="p-2 space-y-2">
-              {d.url && <img src={d.url} alt="Drawing" className="w-full rounded border bg-white" />}
+              {d.url && (
+                <img
+                  src={d.url}
+                  alt={d.ocr_text ? `Handwritten note: ${d.ocr_text.slice(0, 120)}` : `Sketch for ${customer.name || "customer"}`}
+                  className="w-full rounded border bg-white"
+                />
+              )}
               {d.ocr_text ? (
                 <p className="text-sm whitespace-pre-wrap px-1">{d.ocr_text}</p>
               ) : (
@@ -284,7 +293,7 @@ export default function CustomerDetail() {
                   <Sparkles className="h-4 w-4 mr-1" />Transcribe handwriting
                 </Button>
               )}
-              <Button size="sm" variant="ghost" className="w-full" onClick={() => removeDrawing(d)}>
+              <Button size="sm" variant="ghost" className="w-full" onClick={() => removeDrawing(d)} aria-label="Delete drawing">
                 <Trash2 className="h-4 w-4 mr-1" />Delete
               </Button>
             </Card>
@@ -295,15 +304,15 @@ export default function CustomerDetail() {
       <section className="mt-6">
         <div className="flex justify-between items-center mb-2">
           <h2 className="font-serif text-2xl">Photos</h2>
-          <Button size="sm" onClick={() => fileInput.current?.click()}>
+          <Button size="sm" onClick={() => fileInput.current?.click()} aria-label="Add photo">
             <Camera className="h-4 w-4 mr-1" />Add
           </Button>
-          <input ref={fileInput} type="file" accept="image/*" capture="environment" hidden onChange={onPhoto} />
+          <input ref={fileInput} type="file" accept="image/*" capture="environment" hidden onChange={onPhoto} aria-label="Upload photo" />
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {photos.map((p) => (
             <div key={p.id} className="relative group">
-              {p.url && <img src={p.url} alt="Customer photo" className="w-full aspect-square object-cover rounded-md" />}
+              {p.url && <img src={p.url} alt={`Photo for ${customer.name || "customer"}`} className="w-full aspect-square object-cover rounded-md" />}
               <button
                 onClick={() => removePhoto(p)}
                 className="absolute top-1 right-1 bg-background/80 rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
