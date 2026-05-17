@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import SEO from "@/components/SEO";
 
 type Field = { id: string; key: string; label: string; field_type: string; sort_order: number };
 
@@ -54,6 +55,11 @@ export default function ManageFields() {
 
   return (
     <main className="min-h-screen max-w-2xl mx-auto px-5 pt-6 pb-24">
+      <SEO
+        title="Custom fields — Atelier"
+        description="Add custom fields that appear on every Atelier customer record — searchable and sortable."
+        path="/fields"
+      />
       <Button variant="ghost" size="sm" onClick={() => nav("/")} className="mb-3">
         <ArrowLeft className="h-4 w-4 mr-1" />Back
       </Button>
@@ -62,12 +68,12 @@ export default function ManageFields() {
 
       <Card className="p-4 mb-6 space-y-3">
         <div>
-          <Label>Field name</Label>
-          <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Heel preference" maxLength={50} />
+          <Label htmlFor="new-field-label">Field name</Label>
+          <Input id="new-field-label" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Heel preference" maxLength={50} />
         </div>
         <div>
-          <Label>Type</Label>
-          <select value={type} onChange={(e) => setType(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+          <Label htmlFor="new-field-type">Type</Label>
+          <select id="new-field-type" value={type} onChange={(e) => setType(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
             {TYPES.map((t) => <option key={t.v} value={t.v}>{t.l}</option>)}
           </select>
         </div>
@@ -83,7 +89,7 @@ export default function ManageFields() {
               <div className="font-medium">{f.label}</div>
               <div className="text-xs text-muted-foreground">{TYPES.find((t) => t.v === f.field_type)?.l}</div>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => remove(f.id)}>
+            <Button variant="ghost" size="icon" onClick={() => remove(f.id)} aria-label={`Delete field ${f.label}`}>
               <Trash2 className="h-4 w-4" />
             </Button>
           </Card>
