@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Trash2, Plus, X, Camera, Pencil, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import DrawingCanvas from "@/components/DrawingCanvas";
+import SEO from "@/components/SEO";
 
 type Customer = {
   id: string;
@@ -170,14 +171,23 @@ export default function CustomerDetail() {
 
   return (
     <main className="min-h-screen pb-32 max-w-3xl mx-auto px-5 pt-6">
+      <SEO
+        title={`${customer.name || "Customer"} — Atelier`}
+        description={`Customer notes for ${customer.name || "this customer"} — designers, sizes, wishlist, and handwritten notes.`}
+        path={`/c/${customer.id}`}
+      />
       <div className="flex justify-between items-center mb-4">
         <Button variant="ghost" size="sm" onClick={() => nav("/")}><ArrowLeft className="h-4 w-4 mr-1" />Back</Button>
-        <Button variant="ghost" size="sm" onClick={removeCustomer}><Trash2 className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="sm" onClick={removeCustomer} aria-label="Delete this customer"><Trash2 className="h-4 w-4" /></Button>
       </div>
 
+      <h1 className="sr-only">{customer.name || "Untitled customer"}</h1>
+      <label htmlFor="customer-name" className="sr-only">Customer name</label>
       <Input
+        id="customer-name"
         value={customer.name}
         onChange={(e) => update({ name: e.target.value })}
+        aria-label="Customer name"
         className="text-3xl md:text-4xl font-serif h-auto py-2 border-0 shadow-none focus-visible:ring-0 px-0 bg-transparent"
         placeholder="Customer name"
       />
@@ -185,24 +195,26 @@ export default function CustomerDetail() {
       <Card className="p-4 mt-4 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <Label>Phone</Label>
-            <Input value={customer.phone ?? ""} onChange={(e) => update({ phone: e.target.value })} />
+            <Label htmlFor="cust-phone">Phone</Label>
+            <Input id="cust-phone" value={customer.phone ?? ""} onChange={(e) => update({ phone: e.target.value })} />
           </div>
           <div>
-            <Label>Email</Label>
-            <Input type="email" value={customer.email ?? ""} onChange={(e) => update({ email: e.target.value })} />
+            <Label htmlFor="cust-email">Email</Label>
+            <Input id="cust-email" type="email" value={customer.email ?? ""} onChange={(e) => update({ email: e.target.value })} />
           </div>
           <div>
-            <Label>Shoe size</Label>
+            <Label htmlFor="cust-shoesize">Shoe size</Label>
             <Input
+              id="cust-shoesize"
               type="number" step="0.5" min="3" max="14"
               value={customer.shoe_size ?? ""}
               onChange={(e) => update({ shoe_size: e.target.value === "" ? null : Number(e.target.value) })}
             />
           </div>
           <div>
-            <Label>Width</Label>
+            <Label htmlFor="cust-width">Width</Label>
             <select
+              id="cust-width"
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={customer.width ?? ""}
               onChange={(e) => update({ width: e.target.value || null })}
@@ -233,8 +245,11 @@ export default function CustomerDetail() {
       </Card>
 
       <section className="mt-6">
-        <h2 className="font-serif text-2xl mb-2">Notes</h2>
+        <h2 className="font-serif text-2xl mb-2">
+          <label htmlFor="cust-notes">Notes</label>
+        </h2>
         <Textarea
+          id="cust-notes"
           value={customer.typed_notes ?? ""}
           onChange={(e) => update({ typed_notes: e.target.value })}
           placeholder="Type any notes here…"
@@ -246,7 +261,7 @@ export default function CustomerDetail() {
         <div className="flex justify-between items-center mb-2">
           <h2 className="font-serif text-2xl">Drawings</h2>
           {!showCanvas && (
-            <Button size="sm" onClick={() => setShowCanvas(true)}>
+            <Button size="sm" onClick={() => setShowCanvas(true)} aria-label="Add new drawing">
               <Pencil className="h-4 w-4 mr-1" />New
             </Button>
           )}
@@ -263,7 +278,13 @@ export default function CustomerDetail() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {drawings.map((d) => (
             <Card key={d.id} className="p-2 space-y-2">
-              {d.url && <img src={d.url} alt="Drawing" className="w-full rounded border bg-white" />}
+              {d.url && (
+                <img
+                  src={d.url}
+                  alt={d.ocr_text ? `Handwritten note: ${d.ocr_text.slice(0, 120)}` : `Sketch for ${customer.name || "customer"}`}
+                  className="w-full rounded border bg-white"
+                />
+              )}
               {d.ocr_text ? (
                 <p className="text-sm whitespace-pre-wrap px-1">{d.ocr_text}</p>
               ) : (
@@ -271,7 +292,7 @@ export default function CustomerDetail() {
                   <Sparkles className="h-4 w-4 mr-1" />Transcribe handwriting
                 </Button>
               )}
-              <Button size="sm" variant="ghost" className="w-full" onClick={() => removeDrawing(d)}>
+              <Button size="sm" variant="ghost" className="w-full" onClick={() => removeDrawing(d)} aria-label="Delete drawing">
                 <Trash2 className="h-4 w-4 mr-1" />Delete
               </Button>
             </Card>
@@ -282,15 +303,15 @@ export default function CustomerDetail() {
       <section className="mt-6">
         <div className="flex justify-between items-center mb-2">
           <h2 className="font-serif text-2xl">Photos</h2>
-          <Button size="sm" onClick={() => fileInput.current?.click()}>
+          <Button size="sm" onClick={() => fileInput.current?.click()} aria-label="Add photo">
             <Camera className="h-4 w-4 mr-1" />Add
           </Button>
-          <input ref={fileInput} type="file" accept="image/*" capture="environment" hidden onChange={onPhoto} />
+          <input ref={fileInput} type="file" accept="image/*" capture="environment" hidden onChange={onPhoto} aria-label="Upload photo" />
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {photos.map((p) => (
             <div key={p.id} className="relative group">
-              {p.url && <img src={p.url} alt="Customer photo" className="w-full aspect-square object-cover rounded-md" />}
+              {p.url && <img src={p.url} alt={`Photo for ${customer.name || "customer"}`} className="w-full aspect-square object-cover rounded-md" />}
               <button
                 onClick={() => removePhoto(p)}
                 className="absolute top-1 right-1 bg-background/80 rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
@@ -308,6 +329,7 @@ export default function CustomerDetail() {
 
 function TagEditor({ label, values, onChange }: { label: string; values: string[]; onChange: (v: string[]) => void }) {
   const [input, setInput] = useState("");
+  const inputId = useId();
   const add = () => {
     const v = input.trim();
     if (!v) return;
@@ -316,12 +338,12 @@ function TagEditor({ label, values, onChange }: { label: string; values: string[
   };
   return (
     <div>
-      <Label>{label}</Label>
+      <Label htmlFor={inputId}>{label}</Label>
       <div className="flex flex-wrap gap-1 mb-2 mt-1">
         {values.map((v, i) => (
           <Badge key={i} variant="secondary" className="gap-1">
             {v}
-            <button onClick={() => onChange(values.filter((_, j) => j !== i))} aria-label="Remove">
+            <button onClick={() => onChange(values.filter((_, j) => j !== i))} aria-label={`Remove ${v}`}>
               <X className="h-3 w-3" />
             </button>
           </Badge>
@@ -329,23 +351,25 @@ function TagEditor({ label, values, onChange }: { label: string; values: string[
       </div>
       <div className="flex gap-2">
         <Input
+          id={inputId}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
           placeholder={`Add ${label.toLowerCase()}…`}
         />
-        <Button type="button" variant="outline" onClick={add}><Plus className="h-4 w-4" /></Button>
+        <Button type="button" variant="outline" onClick={add} aria-label={`Add ${label.toLowerCase()}`}><Plus className="h-4 w-4" /></Button>
       </div>
     </div>
   );
 }
 
 function CustomFieldInput({ field, value, onChange }: { field: CustomField; value: any; onChange: (v: any) => void }) {
+  const inputId = useId();
   if (field.field_type === "boolean") {
     return (
       <div className="flex items-center justify-between">
-        <Label>{field.label}</Label>
-        <input type="checkbox" checked={!!value} onChange={(e) => onChange(e.target.checked)} className="h-5 w-5" />
+        <Label htmlFor={inputId}>{field.label}</Label>
+        <input id={inputId} type="checkbox" checked={!!value} onChange={(e) => onChange(e.target.checked)} className="h-5 w-5" />
       </div>
     );
   }
@@ -354,8 +378,9 @@ function CustomFieldInput({ field, value, onChange }: { field: CustomField; valu
   }
   return (
     <div>
-      <Label>{field.label}</Label>
+      <Label htmlFor={inputId}>{field.label}</Label>
       <Input
+        id={inputId}
         type={field.field_type === "number" ? "number" : field.field_type === "date" ? "date" : "text"}
         value={value ?? ""}
         onChange={(e) => onChange(field.field_type === "number" ? (e.target.value === "" ? null : Number(e.target.value)) : e.target.value)}

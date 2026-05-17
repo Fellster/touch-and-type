@@ -1,0 +1,10 @@
+# Atelier
+
+> A private customer notebook for women's footwear — type notes, sketch, attach photos, and transcribe handwriting into searchable text.
+
+Atelier is a single-operator boutique tool. Each customer record holds contact details, designer preferences, shoe size & width, "looking for" wishlist tags, free-form notes, drawings, and photos. Custom fields can be added by the shop owner. Drawings can be transcribed to text via AI and searched alongside typed notes. All data is private to the signed-in user.
+
+## Pages
+
+- [Home](/): Searchable, sortable customer list.
+- [Sign in](/auth): Owner sign-in page.

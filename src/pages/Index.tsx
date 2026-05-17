@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Settings, LogOut } from "lucide-react";
 import { toast } from "sonner";
+import SEO from "@/components/SEO";
 
 type Customer = {
   id: string;
@@ -125,11 +126,16 @@ export default function Index() {
 
   return (
     <main className="min-h-screen pb-24">
+      <SEO
+        title="Atelier — Private Customer Notebook"
+        description="Search and manage your women's footwear customer notes — designers, sizes, wishlists, photos, and handwriting."
+        path="/"
+      />
       <header className="px-5 pt-8 pb-4 max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-2">
-          <h1 className="text-4xl font-serif">Atelier</h1>
+          <h1 className="text-4xl font-serif">Atelier — Customer Notebook</h1>
           <div className="flex gap-1">
-            <Button variant="ghost" size="icon" onClick={() => nav("/fields")} aria-label="Manage fields">
+            <Button variant="ghost" size="icon" onClick={() => nav("/fields")} aria-label="Manage custom fields">
               <Settings className="h-5 w-5" />
             </Button>
             <Button variant="ghost" size="icon" onClick={signOut} aria-label="Sign out">
@@ -142,17 +148,19 @@ export default function Index() {
 
       <section className="px-5 max-w-3xl mx-auto space-y-3">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
           <Input
+            id="customer-search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search name, phone, designer, notes…"
+            aria-label="Search customers"
             className="pl-9 h-11"
           />
         </div>
         <div className="flex gap-2">
           <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="flex-1" aria-label="Sort customers"><SelectValue /></SelectTrigger>
             <SelectContent>
               {sortOptions.map((o) => <SelectItem key={o.v} value={o.v}>{o.l}</SelectItem>)}
             </SelectContent>
