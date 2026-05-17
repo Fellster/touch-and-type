@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Trash2, Plus, X, Camera, Pencil, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import DrawingCanvas from "@/components/DrawingCanvas";
+import SEO from "@/components/SEO";
+import { useId } from "react";
 
 type Customer = {
   id: string;
@@ -170,14 +172,23 @@ export default function CustomerDetail() {
 
   return (
     <main className="min-h-screen pb-32 max-w-3xl mx-auto px-5 pt-6">
+      <SEO
+        title={`${customer.name || "Customer"} — Atelier`}
+        description={`Customer notes for ${customer.name || "this customer"} — designers, sizes, wishlist, and handwritten notes.`}
+        path={`/c/${customer.id}`}
+      />
       <div className="flex justify-between items-center mb-4">
         <Button variant="ghost" size="sm" onClick={() => nav("/")}><ArrowLeft className="h-4 w-4 mr-1" />Back</Button>
-        <Button variant="ghost" size="sm" onClick={removeCustomer}><Trash2 className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="sm" onClick={removeCustomer} aria-label="Delete this customer"><Trash2 className="h-4 w-4" /></Button>
       </div>
 
+      <h1 className="sr-only">{customer.name || "Untitled customer"}</h1>
+      <label htmlFor="customer-name" className="sr-only">Customer name</label>
       <Input
+        id="customer-name"
         value={customer.name}
         onChange={(e) => update({ name: e.target.value })}
+        aria-label="Customer name"
         className="text-3xl md:text-4xl font-serif h-auto py-2 border-0 shadow-none focus-visible:ring-0 px-0 bg-transparent"
         placeholder="Customer name"
       />
@@ -185,24 +196,26 @@ export default function CustomerDetail() {
       <Card className="p-4 mt-4 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <Label>Phone</Label>
-            <Input value={customer.phone ?? ""} onChange={(e) => update({ phone: e.target.value })} />
+            <Label htmlFor="cust-phone">Phone</Label>
+            <Input id="cust-phone" value={customer.phone ?? ""} onChange={(e) => update({ phone: e.target.value })} />
           </div>
           <div>
-            <Label>Email</Label>
-            <Input type="email" value={customer.email ?? ""} onChange={(e) => update({ email: e.target.value })} />
+            <Label htmlFor="cust-email">Email</Label>
+            <Input id="cust-email" type="email" value={customer.email ?? ""} onChange={(e) => update({ email: e.target.value })} />
           </div>
           <div>
-            <Label>Shoe size</Label>
+            <Label htmlFor="cust-shoesize">Shoe size</Label>
             <Input
+              id="cust-shoesize"
               type="number" step="0.5" min="3" max="14"
               value={customer.shoe_size ?? ""}
               onChange={(e) => update({ shoe_size: e.target.value === "" ? null : Number(e.target.value) })}
             />
           </div>
           <div>
-            <Label>Width</Label>
+            <Label htmlFor="cust-width">Width</Label>
             <select
+              id="cust-width"
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={customer.width ?? ""}
               onChange={(e) => update({ width: e.target.value || null })}
