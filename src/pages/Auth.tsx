@@ -58,9 +58,14 @@ export default function Auth() {
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4">
+      <SEO
+        title={mode === "signin" ? "Sign in — Atelier" : "Create account — Atelier"}
+        description="Sign in to your private Atelier customer notebook for women's footwear."
+        path="/auth"
+      />
       <Card className="w-full max-w-md p-8 shadow-sm">
         <header className="text-center mb-6">
-          <h1 className="text-4xl font-serif">Atelier</h1>
+          <h1 className="text-4xl font-serif">{mode === "signin" ? "Sign in to Atelier" : "Create your Atelier account"}</h1>
           <p className="text-sm text-muted-foreground mt-1">Your private customer notebook</p>
         </header>
         <form onSubmit={submit} className="space-y-4">
