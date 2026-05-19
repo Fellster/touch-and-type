@@ -133,7 +133,10 @@ export default function Index() {
       />
       <header className="px-5 pt-8 pb-4 max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-2">
-          <h1 className="text-4xl font-serif">Atelier — Customer Notebook</h1>
+          <div className="flex items-center gap-3 min-w-0">
+            <h1 className="text-4xl font-serif">Atelier — Customer Notebook</h1>
+            <img src="/favicon.png" alt="Atelier logo" className="h-10 w-10 object-contain shrink-0" />
+          </div>
           <div className="flex gap-1">
             <Button variant="ghost" size="icon" onClick={() => nav("/fields")} aria-label="Manage custom fields">
               <Settings className="h-5 w-5" />
