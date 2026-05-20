@@ -132,18 +132,16 @@ export default function Index() {
         path="/"
       />
       <header className="px-5 pt-8 pb-4 max-w-3xl mx-auto">
-        <div className="flex items-start justify-between mb-2">
-          <h1 className="sr-only">Atelier — Customer Notebook</h1>
-          <img src="/favicon.png" alt="Atelier logo" className="h-40 w-40 object-contain" />
-          <div className="flex gap-1 shrink-0">
-            <Button variant="ghost" size="icon" onClick={() => nav("/fields")} aria-label="Manage custom fields">
-              <Settings className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={signOut} aria-label="Sign out">
-              <LogOut className="h-5 w-5" />
-            </Button>
-          </div>
+        <div className="flex justify-end gap-1 mb-2">
+          <Button variant="ghost" size="icon" onClick={() => nav("/fields")} aria-label="Manage custom fields">
+            <Settings className="h-5 w-5" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={signOut} aria-label="Sign out">
+            <LogOut className="h-5 w-5" />
+          </Button>
         </div>
+        <h1 className="sr-only">Atelier — Customer Notebook</h1>
+        <img src="/favicon.png" alt="Atelier logo" className="h-40 w-40 object-contain mx-auto mb-2" />
         <p className="text-sm text-muted-foreground">{customers.length} customers</p>
       </header>
 
