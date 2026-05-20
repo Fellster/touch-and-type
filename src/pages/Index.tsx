@@ -132,12 +132,9 @@ export default function Index() {
         path="/"
       />
       <header className="px-5 pt-8 pb-4 max-w-3xl mx-auto">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-3 min-w-0">
-            <h1 className="text-4xl font-serif">Atelier — Customer Notebook</h1>
-            <img src="/favicon.png" alt="Atelier logo" className="h-10 w-10 object-contain shrink-0" />
-          </div>
-          <div className="flex gap-1">
+        <div className="flex items-start justify-between mb-2">
+          <h1 className="text-4xl font-serif min-w-0">Atelier — Customer Notebook</h1>
+          <div className="flex gap-1 shrink-0">
             <Button variant="ghost" size="icon" onClick={() => nav("/fields")} aria-label="Manage custom fields">
               <Settings className="h-5 w-5" />
             </Button>
@@ -146,6 +143,7 @@ export default function Index() {
             </Button>
           </div>
         </div>
+        <img src="/favicon.png" alt="Atelier logo" className="h-16 w-16 object-contain mb-2" />
         <p className="text-sm text-muted-foreground">{customers.length} customers</p>
       </header>
 
