@@ -116,7 +116,7 @@ export default function Index() {
       .insert({ user_id: user!.id, name: "New customer" })
       .select().single();
     if (error) return toast.error(error.message);
-    nav(`/c/${data!.id}`);
+    nav(`/c/${data!.id}?new=1`);
   };
 
   const signOut = async () => {
