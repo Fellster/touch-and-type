@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Trash2, Plus, X, Camera, Pencil, Sparkles } from "lucide-react";
+import { ArrowLeft, Trash2, Plus, X, Camera, Pencil, Sparkles, Copy, Mail } from "lucide-react";
 import { toast } from "sonner";
 import DrawingCanvas from "@/components/DrawingCanvas";
 import SEO from "@/components/SEO";
@@ -196,11 +196,17 @@ export default function CustomerDetail() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <Label htmlFor="cust-phone">Phone</Label>
-            <Input id="cust-phone" value={customer.phone ?? ""} onChange={(e) => update({ phone: e.target.value })} />
+            <div className="flex gap-2">
+              <Input id="cust-phone" className="flex-1" value={customer.phone ?? ""} onChange={(e) => update({ phone: e.target.value })} />
+              <Button variant="outline" size="icon" aria-label="Copy phone number" disabled={!customer.phone} onClick={async () => { if (customer.phone) { await navigator.clipboard.writeText(customer.phone); toast.success("Phone copied"); } }}><Copy className="h-4 w-4" /></Button>
+            </div>
           </div>
           <div>
             <Label htmlFor="cust-email">Email</Label>
-            <Input id="cust-email" type="email" value={customer.email ?? ""} onChange={(e) => update({ email: e.target.value })} />
+            <div className="flex gap-2">
+              <Input id="cust-email" className="flex-1" type="email" value={customer.email ?? ""} onChange={(e) => update({ email: e.target.value })} />
+              <Button variant="outline" size="icon" asChild aria-label="Send email" disabled={!customer.email}><a href={customer.email ? `mailto:${customer.email}` : undefined}><Mail className="h-4 w-4" /></a></Button>
+            </div>
           </div>
           <div>
             <Label htmlFor="cust-shoesize">Shoe size</Label>
