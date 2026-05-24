@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ export default function CustomerDetail() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const nav = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [fields, setFields] = useState<CustomField[]>([]);
   const [drawings, setDrawings] = useState<Drawing[]>([]);
@@ -41,6 +42,7 @@ export default function CustomerDetail() {
   const [showCanvas, setShowCanvas] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const saveTimer = useRef<number | null>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
     if (!id) return;
@@ -69,6 +71,14 @@ export default function CustomerDetail() {
   };
 
   useEffect(() => { load(); }, [id]);
+
+  useEffect(() => {
+    if (customer && searchParams.get("new") === "1" && customer.name === "New customer") {
+      nameInputRef.current?.focus();
+      nameInputRef.current?.select();
+      setSearchParams({}, { replace: true });
+    }
+  }, [customer, searchParams]);
 
   const update = (patch: Partial<Customer>) => {
     if (!customer) return;
@@ -185,6 +195,7 @@ export default function CustomerDetail() {
       <label htmlFor="customer-name" className="sr-only">Customer name</label>
       <Input
         id="customer-name"
+        ref={nameInputRef}
         value={customer.name}
         onChange={(e) => update({ name: e.target.value })}
         aria-label="Customer name"
