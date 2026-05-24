@@ -199,7 +199,7 @@ export default function CustomerDetail() {
             <div className="flex gap-2">
               <Input id="cust-phone" className="flex-1" value={customer.phone ?? ""} onChange={(e) => update({ phone: e.target.value })} />
               <Button variant="outline" size="icon" aria-label="Copy phone number" disabled={!customer.phone} onClick={async () => { if (customer.phone) { await navigator.clipboard.writeText(customer.phone); toast.success("Phone copied"); } }}><Copy className="h-4 w-4" /></Button>
-              <Button variant="outline" size="icon" asChild aria-label="Call phone number" disabled={!customer.phone}><a href={customer.phone ? `tel:${customer.phone}` : undefined}><Phone className="h-4 w-4" /></a></Button>
+              <Button variant="outline" size="icon" aria-label="Call phone number" disabled={!customer.phone} onClick={() => { if (customer.phone) { window.location.href = `tel:${customer.phone.replace(/[^\d+]/g, "")}`; } }}><Phone className="h-4 w-4" /></Button>
             </div>
           </div>
           <div>
