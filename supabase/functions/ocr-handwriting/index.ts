@@ -39,6 +39,31 @@ Deno.serve(async (req) => {
       });
     }
 
+    const MAX_B64_BYTES = 5 * 1024 * 1024; // ~5 MB of base64
+    if (imageBase64.length > MAX_B64_BYTES) {
+      return new Response(JSON.stringify({ error: "Image too large (max ~5MB)" }), {
+        status: 413,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Validate it looks like a PNG/JPEG data URL or raw base64 (no stray chars)
+    const b64Body = imageBase64.startsWith("data:")
+      ? imageBase64.replace(/^data:image\/(png|jpeg|jpg|webp);base64,/, "")
+      : imageBase64;
+    if (imageBase64.startsWith("data:") && b64Body === imageBase64) {
+      return new Response(JSON.stringify({ error: "Unsupported image type" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (!/^[A-Za-z0-9+/=\r\n]+$/.test(b64Body)) {
+      return new Response(JSON.stringify({ error: "Invalid base64 image" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
