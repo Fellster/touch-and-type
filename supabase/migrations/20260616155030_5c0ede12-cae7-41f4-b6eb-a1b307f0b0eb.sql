@@ -1,0 +1,2 @@
+CREATE POLICY "Owners can update own drawings objects" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'drawings' AND auth.uid()::text = (storage.foldername(name))[1]) WITH CHECK (bucket_id = 'drawings' AND auth.uid()::text = (storage.foldername(name))[1]);
+CREATE POLICY "Owners can update own photos objects" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'photos' AND auth.uid()::text = (storage.foldername(name))[1]) WITH CHECK (bucket_id = 'photos' AND auth.uid()::text = (storage.foldername(name))[1]);
