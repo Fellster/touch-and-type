@@ -62,7 +62,9 @@ export default function Auth() {
         title={mode === "signin" ? "Sign in — Atelier" : "Create account — Atelier"}
         description="Sign in to your private Atelier customer notebook for women's footwear."
         path="/auth"
+        noindex
       />
+
       <Card className="w-full max-w-md p-8 shadow-sm">
         <header className="text-center mb-6">
           <h1 className="text-4xl font-serif">{mode === "signin" ? "Sign in to Atelier" : "Create your Atelier account"}</h1>
