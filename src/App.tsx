@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth.tsx";
+import Preview from "./pages/Preview.tsx";
 import CustomerDetail from "./pages/CustomerDetail.tsx";
 import ManageFields from "./pages/ManageFields.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -22,6 +23,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/preview" element={<Preview />} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/c/:id" element={<ProtectedRoute><CustomerDetail /></ProtectedRoute>} />
             <Route path="/fields" element={<ProtectedRoute><ManageFields /></ProtectedRoute>} />
