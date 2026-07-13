@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -20,10 +20,11 @@ type Customer = {
 export default function Customers() {
   const { user } = useAuth();
   const nav = useNavigate();
+  const [sp] = useSearchParams();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
-  const [adding, setAdding] = useState(false);
+  const [adding, setAdding] = useState(sp.get("add") === "1");
   const [newName, setNewName] = useState("");
 
   const load = async () => {
