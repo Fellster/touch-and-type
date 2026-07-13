@@ -345,6 +345,18 @@ export default function Index() {
         </form>
       </section>
 
+      <section className="px-5 max-w-2xl mx-auto mt-4 flex gap-2">
+        <Button variant="outline" className="flex-1 h-11" onClick={() => nav("/customers?add=1")}>
+          <Plus className="h-4 w-4 mr-1" />
+          Add customer
+        </Button>
+        <Button variant="outline" className="flex-1 h-11" onClick={() => nav("/customers")}>
+          <NotebookPen className="h-4 w-4 mr-1" />
+          Search customers
+        </Button>
+      </section>
+
+
       <section className="px-5 max-w-2xl mx-auto mt-6 space-y-6">
         {loading ? (
           <p className="text-center text-muted-foreground py-12">Loading…</p>
