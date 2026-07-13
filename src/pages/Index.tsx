@@ -1,200 +1,231 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Settings, LogOut } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Trash2, LogOut, NotebookPen } from "lucide-react";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
 
-type Customer = {
+type Todo = {
   id: string;
-  name: string;
-  phone: string | null;
-  email: string | null;
-  designers: string[];
-  shoe_size: number | null;
-  width: string | null;
-  looking_for: string[];
-  typed_notes: string | null;
-  custom_data: Record<string, any>;
-  updated_at: string;
+  title: string;
+  notes: string | null;
+  due_at: string | null;
+  done: boolean;
+  created_at: string;
 };
 
-type CustomField = { id: string; key: string; label: string; field_type: string };
+// Convert an ISO timestamptz to the local yyyy-MM-ddTHH:mm value for <input type="datetime-local">
+const toLocalInput = (iso: string | null) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+const fromLocalInput = (v: string) => (v ? new Date(v).toISOString() : null);
+
+const formatDue = (iso: string | null) => {
+  if (!iso) return "No date";
+  const d = new Date(iso);
+  return d.toLocaleString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+};
 
 export default function Index() {
   const { user } = useAuth();
   const nav = useNavigate();
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [drawingsText, setDrawingsText] = useState<Record<string, string>>({});
-  const [fields, setFields] = useState<CustomField[]>([]);
-  const [q, setQ] = useState("");
-  const [sortBy, setSortBy] = useState("name_asc");
+  const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [title, setTitle] = useState("");
+  const [due, setDue] = useState("");
 
   const load = async () => {
     setLoading(true);
-    const [c, f, d] = await Promise.all([
-      supabase.from("customers").select("*"),
-      supabase.from("custom_fields").select("*").order("sort_order"),
-      supabase.from("drawings").select("customer_id, ocr_text"),
-    ]);
-    if (c.error) toast.error(c.error.message);
-    setCustomers((c.data ?? []) as Customer[]);
-    setFields((f.data ?? []) as CustomField[]);
-    const map: Record<string, string> = {};
-    (d.data ?? []).forEach((r: any) => {
-      if (r.ocr_text) map[r.customer_id] = (map[r.customer_id] ?? "") + " " + r.ocr_text;
-    });
-    setDrawingsText(map);
+    const { data, error } = await supabase
+      .from("todos")
+      .select("*")
+      .order("done", { ascending: true })
+      .order("due_at", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: false });
+    if (error) toast.error(error.message);
+    setTodos((data ?? []) as Todo[]);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
-  const sortOptions = useMemo(() => {
-    const base = [
-      { v: "name_asc", l: "Name A–Z" },
-      { v: "name_desc", l: "Name Z–A" },
-      { v: "designer", l: "Designer" },
-      { v: "size", l: "Shoe size" },
-      { v: "looking", l: "Looking for" },
-      { v: "updated", l: "Recently updated" },
-    ];
-    fields.forEach((f) => base.push({ v: `cf:${f.key}`, l: f.label }));
-    return base;
-  }, [fields]);
-
-  const filtered = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    let list = customers;
-    if (needle) {
-      list = list.filter((c) => {
-        const blob = [
-          c.name,
-          c.phone ?? "",
-          c.email ?? "",
-          c.designers.join(" "),
-          c.looking_for.join(" "),
-          c.typed_notes ?? "",
-          drawingsText[c.id] ?? "",
-          JSON.stringify(c.custom_data ?? {}),
-        ].join(" ").toLowerCase();
-        return blob.includes(needle);
-      });
-    }
-    const sorted = [...list];
-    sorted.sort((a, b) => {
-      switch (sortBy) {
-        case "name_desc": return b.name.localeCompare(a.name);
-        case "designer": return (a.designers[0] ?? "").localeCompare(b.designers[0] ?? "");
-        case "size": return (a.shoe_size ?? 0) - (b.shoe_size ?? 0);
-        case "looking": return (a.looking_for[0] ?? "").localeCompare(b.looking_for[0] ?? "");
-        case "updated": return b.updated_at.localeCompare(a.updated_at);
-        default:
-          if (sortBy.startsWith("cf:")) {
-            const k = sortBy.slice(3);
-            const av = String(a.custom_data?.[k] ?? "");
-            const bv = String(b.custom_data?.[k] ?? "");
-            const an = Number(av), bn = Number(bv);
-            if (!isNaN(an) && !isNaN(bn) && av !== "" && bv !== "") return an - bn;
-            return av.localeCompare(bv);
-          }
-          return a.name.localeCompare(b.name);
-      }
+  const add = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) return;
+    const { error } = await supabase.from("todos").insert({
+      user_id: user!.id,
+      title: title.trim(),
+      due_at: fromLocalInput(due),
     });
-    return sorted;
-  }, [customers, q, sortBy, drawingsText]);
-
-  const newCustomer = async () => {
-    const { data, error } = await supabase
-      .from("customers")
-      .insert({ user_id: user!.id, name: "New customer" })
-      .select().single();
     if (error) return toast.error(error.message);
-    nav(`/c/${data!.id}?new=1`);
+    setTitle("");
+    setDue("");
+    load();
   };
+
+  const toggle = async (t: Todo) => {
+    setTodos((prev) => prev.map((x) => (x.id === t.id ? { ...x, done: !x.done } : x)));
+    const { error } = await supabase.from("todos").update({ done: !t.done }).eq("id", t.id);
+    if (error) {
+      toast.error(error.message);
+      load();
+    }
+  };
+
+  const updateDue = async (t: Todo, v: string) => {
+    const iso = fromLocalInput(v);
+    setTodos((prev) => prev.map((x) => (x.id === t.id ? { ...x, due_at: iso } : x)));
+    const { error } = await supabase.from("todos").update({ due_at: iso }).eq("id", t.id);
+    if (error) toast.error(error.message);
+  };
+
+  const remove = async (id: string) => {
+    setTodos((prev) => prev.filter((x) => x.id !== id));
+    const { error } = await supabase.from("todos").delete().eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      load();
+    }
+  };
+
+  const { overdue, today, upcoming, later, completed } = useMemo(() => {
+    const now = new Date();
+    const startOfTomorrow = new Date(now);
+    startOfTomorrow.setHours(24, 0, 0, 0);
+    const endOfWeek = new Date(now);
+    endOfWeek.setDate(endOfWeek.getDate() + 7);
+
+    const groups = { overdue: [] as Todo[], today: [] as Todo[], upcoming: [] as Todo[], later: [] as Todo[], completed: [] as Todo[] };
+    todos.forEach((t) => {
+      if (t.done) return groups.completed.push(t);
+      if (!t.due_at) return groups.later.push(t);
+      const d = new Date(t.due_at);
+      if (d < now) groups.overdue.push(t);
+      else if (d < startOfTomorrow) groups.today.push(t);
+      else if (d < endOfWeek) groups.upcoming.push(t);
+      else groups.later.push(t);
+    });
+    return groups;
+  }, [todos]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
     nav("/auth");
   };
 
+  const Section = ({ label, items, tone }: { label: string; items: Todo[]; tone?: string }) => {
+    if (items.length === 0) return null;
+    return (
+      <div className="space-y-2">
+        <h2 className={`font-serif text-lg ${tone ?? "text-foreground"}`}>{label}</h2>
+        {items.map((t) => (
+          <Card key={t.id} className={`p-3 flex items-start gap-3 ${t.done ? "opacity-60" : ""}`}>
+            <Checkbox
+              checked={t.done}
+              onCheckedChange={() => toggle(t)}
+              className="mt-1"
+              aria-label={`Mark ${t.title} ${t.done ? "not done" : "done"}`}
+            />
+            <div className="flex-1 min-w-0">
+              <p className={`truncate ${t.done ? "line-through text-muted-foreground" : ""}`}>{t.title}</p>
+              <div className="mt-1 flex items-center gap-2">
+                <Input
+                  type="datetime-local"
+                  value={toLocalInput(t.due_at)}
+                  onChange={(e) => updateDue(t, e.target.value)}
+                  className="h-8 text-xs w-[210px]"
+                  aria-label="Due date and time"
+                />
+                <span className="text-xs text-muted-foreground truncate">{formatDue(t.due_at)}</span>
+              </div>
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => remove(t.id)} aria-label="Delete task">
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </Card>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <main className="min-h-screen pb-24">
       <SEO
-        title="Atelier — Private Customer Notebook"
-        description="Search and manage your women's footwear customer notes — designers, sizes, wishlists, photos, and handwriting."
+        title="To-Do — Atelier"
+        description="A simple, private to-do list scheduled by date and time."
         path="/"
       />
-      <header className="px-5 pt-8 pb-4 max-w-3xl mx-auto">
+      <header className="px-5 pt-8 pb-4 max-w-2xl mx-auto">
         <div className="flex justify-end gap-1 mb-2">
-          <Button variant="ghost" size="icon" onClick={() => nav("/fields")} aria-label="Manage custom fields">
-            <Settings className="h-5 w-5" />
+          <Button variant="ghost" size="icon" onClick={() => nav("/customers")} aria-label="Customer notebook" title="Customer notebook (legacy)">
+            <NotebookPen className="h-5 w-5" />
           </Button>
           <Button variant="ghost" size="icon" onClick={signOut} aria-label="Sign out">
             <LogOut className="h-5 w-5" />
           </Button>
         </div>
-        <h1 className="sr-only">Atelier — Customer Notebook</h1>
-        <img src="/favicon.png" alt="Atelier logo" className="h-40 w-40 object-contain mx-auto mb-2" />
-        <p className="text-sm text-muted-foreground">{customers.length} customers</p>
+        <h1 className="font-serif text-3xl">To-Do</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          {todos.filter((t) => !t.done).length} open · {todos.filter((t) => t.done).length} done
+        </p>
       </header>
 
-      <section className="px-5 max-w-3xl mx-auto space-y-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+      <section className="px-5 max-w-2xl mx-auto">
+        <form onSubmit={add} className="space-y-2">
           <Input
-            id="customer-search"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search name, phone, designer, notes…"
-            aria-label="Search customers"
-            className="pl-9 h-11"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="What do you need to do?"
+            className="h-11"
+            aria-label="New task"
           />
-        </div>
-        <div className="flex gap-2">
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="flex-1" aria-label="Sort customers"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {sortOptions.map((o) => <SelectItem key={o.v} value={o.v}>{o.l}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Button onClick={newCustomer}><Plus className="h-4 w-4 mr-1" />New</Button>
-        </div>
+          <div className="flex gap-2">
+            <Input
+              type="datetime-local"
+              value={due}
+              onChange={(e) => setDue(e.target.value)}
+              className="flex-1 h-11"
+              aria-label="Due date and time"
+            />
+            <Button type="submit" className="h-11">
+              <Plus className="h-4 w-4 mr-1" />
+              Add
+            </Button>
+          </div>
+        </form>
       </section>
 
-      <section className="px-5 max-w-3xl mx-auto mt-5 space-y-2">
+      <section className="px-5 max-w-2xl mx-auto mt-6 space-y-6">
         {loading ? (
           <p className="text-center text-muted-foreground py-12">Loading…</p>
-        ) : filtered.length === 0 ? (
-          <p className="text-center text-muted-foreground py-12">
-            {customers.length === 0 ? "Tap New to add your first customer." : "No matches."}
-          </p>
-        ) : filtered.map((c) => (
-          <Link key={c.id} to={`/c/${c.id}`}>
-            <Card className="p-4 hover:bg-secondary/40 transition cursor-pointer">
-              <div className="flex justify-between items-start gap-3">
-                <div className="min-w-0">
-                  <h2 className="font-serif text-xl truncate">{c.name || "Untitled"}</h2>
-                  <p className="text-sm text-muted-foreground truncate">
-                    {[c.designers.join(", "), c.shoe_size ? `Size ${c.shoe_size}` : null].filter(Boolean).join(" · ")}
-                  </p>
-                  {c.looking_for.length > 0 && (
-                    <p className="text-xs text-muted-foreground mt-1 truncate">
-                      Looking for: {c.looking_for.join(", ")}
-                    </p>
-                  )}
-                </div>
-                {c.phone && <span className="text-xs text-muted-foreground whitespace-nowrap">{c.phone}</span>}
-              </div>
-            </Card>
-          </Link>
-        ))}
+        ) : todos.length === 0 ? (
+          <p className="text-center text-muted-foreground py-12">Nothing yet. Add your first task above.</p>
+        ) : (
+          <>
+            <Section label="Overdue" items={overdue} tone="text-destructive" />
+            <Section label="Today" items={today} />
+            <Section label="Upcoming" items={upcoming} />
+            <Section label="No date / Later" items={later} />
+            <Section label="Completed" items={completed} tone="text-muted-foreground" />
+          </>
+        )}
       </section>
     </main>
   );
