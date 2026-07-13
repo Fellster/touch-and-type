@@ -1,0 +1,2 @@
+ALTER TABLE public.todos ADD COLUMN IF NOT EXISTS position DOUBLE PRECISION NOT NULL DEFAULT 0;
+UPDATE public.todos SET position = EXTRACT(EPOCH FROM created_at) WHERE position = 0;

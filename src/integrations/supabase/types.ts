@@ -166,6 +166,7 @@ export type Database = {
           due_at: string | null
           id: string
           notes: string | null
+          position: number
           title: string
           updated_at: string
           user_id: string
@@ -176,6 +177,7 @@ export type Database = {
           due_at?: string | null
           id?: string
           notes?: string | null
+          position?: number
           title: string
           updated_at?: string
           user_id: string
@@ -186,6 +188,7 @@ export type Database = {
           due_at?: string | null
           id?: string
           notes?: string | null
+          position?: number
           title?: string
           updated_at?: string
           user_id?: string
