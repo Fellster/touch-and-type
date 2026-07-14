@@ -40,6 +40,7 @@ export default function Customers() {
   const [sp] = useSearchParams();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [q, setQ] = useState("");
+  const [sort, setSort] = useState<SortOption>("updated_desc");
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(sp.get("add") === "1");
   const [newName, setNewName] = useState("");
