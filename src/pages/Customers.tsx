@@ -16,6 +16,7 @@ type Customer = {
   email: string | null;
   designers: string[];
   looking_for: string[];
+  shoe_size: number | null;
   updated_at: string;
 };
 
