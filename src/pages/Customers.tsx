@@ -14,6 +14,8 @@ type Customer = {
   name: string;
   phone: string | null;
   email: string | null;
+  designers: string[];
+  looking_for: string[];
   updated_at: string;
 };
 
@@ -31,7 +33,7 @@ export default function Customers() {
     setLoading(true);
     const { data, error } = await supabase
       .from("customers")
-      .select("id,name,phone,email,updated_at")
+      .select("id,name,phone,email,designers,looking_for,updated_at")
       .order("updated_at", { ascending: false });
     if (error) toast.error(error.message);
     setCustomers((data ?? []) as Customer[]);
@@ -45,11 +47,17 @@ export default function Customers() {
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
     if (!s) return customers;
-    return customers.filter(
-      (c) =>
-        c.name.toLowerCase().includes(s) ||
-        (c.phone ?? "").toLowerCase().includes(s) ||
-        (c.email ?? "").toLowerCase().includes(s),
+    return customers.filter((c) =>
+      [
+        c.name,
+        c.phone ?? "",
+        c.email ?? "",
+        (c.designers ?? []).join(" "),
+        (c.looking_for ?? []).join(" "),
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(s),
     );
   }, [customers, q]);
 
@@ -103,7 +111,7 @@ export default function Customers() {
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search by name, phone, or email"
+            placeholder="Search name, phone, email, designer, or looking for"
             className="h-11 pl-9"
             aria-label="Search customers"
           />
