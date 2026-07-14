@@ -60,22 +60,45 @@ export default function Customers() {
     load();
   }, []);
 
-  const filtered = useMemo(() => {
+  const results = useMemo(() => {
     const s = q.trim().toLowerCase();
-    if (!s) return customers;
-    return customers.filter((c) =>
-      [
-        c.name,
-        c.phone ?? "",
-        c.email ?? "",
-        (c.designers ?? []).join(" "),
-        (c.looking_for ?? []).join(" "),
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(s),
-    );
-  }, [customers, q]);
+    const list = s
+      ? customers.filter((c) =>
+          [
+            c.name,
+            c.phone ?? "",
+            c.email ?? "",
+            (c.designers ?? []).join(" "),
+            (c.looking_for ?? []).join(" "),
+          ]
+            .join(" ")
+            .toLowerCase()
+            .includes(s),
+        )
+      : [...customers];
+
+    const firstDesigner = (c: Customer) => (c.designers?.[0] ?? "").toLowerCase();
+
+    switch (sort) {
+      case "designer_asc":
+        list.sort((a, b) => firstDesigner(a).localeCompare(firstDesigner(b)) || a.name.localeCompare(b.name));
+        break;
+      case "designer_desc":
+        list.sort((a, b) => firstDesigner(b).localeCompare(firstDesigner(a)) || a.name.localeCompare(b.name));
+        break;
+      case "shoe_size_asc":
+        list.sort((a, b) => (a.shoe_size ?? Infinity) - (b.shoe_size ?? Infinity) || a.name.localeCompare(b.name));
+        break;
+      case "shoe_size_desc":
+        list.sort((a, b) => (b.shoe_size ?? -Infinity) - (a.shoe_size ?? -Infinity) || a.name.localeCompare(b.name));
+        break;
+      case "updated_desc":
+      default:
+        list.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+        break;
+    }
+    return list;
+  }, [customers, q, sort]);
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
