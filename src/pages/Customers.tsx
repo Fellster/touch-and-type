@@ -5,9 +5,23 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Plus, Search, User } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ArrowLeft, ArrowUpDown, Plus, Search, User } from "lucide-react";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
+
+type SortOption =
+  | "updated_desc"
+  | "designer_asc"
+  | "designer_desc"
+  | "shoe_size_asc"
+  | "shoe_size_desc";
 
 type Customer = {
   id: string;
