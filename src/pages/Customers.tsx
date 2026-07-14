@@ -14,6 +14,8 @@ type Customer = {
   name: string;
   phone: string | null;
   email: string | null;
+  designers: string[];
+  looking_for: string[];
   updated_at: string;
 };
 
