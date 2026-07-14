@@ -5,9 +5,23 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Plus, Search, User } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ArrowLeft, ArrowUpDown, Plus, Search, User } from "lucide-react";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
+
+type SortOption =
+  | "updated_desc"
+  | "designer_asc"
+  | "designer_desc"
+  | "shoe_size_asc"
+  | "shoe_size_desc";
 
 type Customer = {
   id: string;
@@ -26,6 +40,7 @@ export default function Customers() {
   const [sp] = useSearchParams();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [q, setQ] = useState("");
+  const [sort, setSort] = useState<SortOption>("updated_desc");
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(sp.get("add") === "1");
   const [newName, setNewName] = useState("");
@@ -45,22 +60,45 @@ export default function Customers() {
     load();
   }, []);
 
-  const filtered = useMemo(() => {
+  const results = useMemo(() => {
     const s = q.trim().toLowerCase();
-    if (!s) return customers;
-    return customers.filter((c) =>
-      [
-        c.name,
-        c.phone ?? "",
-        c.email ?? "",
-        (c.designers ?? []).join(" "),
-        (c.looking_for ?? []).join(" "),
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(s),
-    );
-  }, [customers, q]);
+    const list = s
+      ? customers.filter((c) =>
+          [
+            c.name,
+            c.phone ?? "",
+            c.email ?? "",
+            (c.designers ?? []).join(" "),
+            (c.looking_for ?? []).join(" "),
+          ]
+            .join(" ")
+            .toLowerCase()
+            .includes(s),
+        )
+      : [...customers];
+
+    const firstDesigner = (c: Customer) => (c.designers?.[0] ?? "").toLowerCase();
+
+    switch (sort) {
+      case "designer_asc":
+        list.sort((a, b) => firstDesigner(a).localeCompare(firstDesigner(b)) || a.name.localeCompare(b.name));
+        break;
+      case "designer_desc":
+        list.sort((a, b) => firstDesigner(b).localeCompare(firstDesigner(a)) || a.name.localeCompare(b.name));
+        break;
+      case "shoe_size_asc":
+        list.sort((a, b) => (a.shoe_size ?? Infinity) - (b.shoe_size ?? Infinity) || a.name.localeCompare(b.name));
+        break;
+      case "shoe_size_desc":
+        list.sort((a, b) => (b.shoe_size ?? -Infinity) - (a.shoe_size ?? -Infinity) || a.name.localeCompare(b.name));
+        break;
+      case "updated_desc":
+      default:
+        list.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+        break;
+    }
+    return list;
+  }, [customers, q, sort]);
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,17 +155,32 @@ export default function Customers() {
             aria-label="Search customers"
           />
         </div>
+        <div className="flex items-center gap-2">
+          <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+          <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
+            <SelectTrigger className="h-10 flex-1" aria-label="Sort customers">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="updated_desc">Recently updated</SelectItem>
+              <SelectItem value="designer_asc">Designer A–Z</SelectItem>
+              <SelectItem value="designer_desc">Designer Z–A</SelectItem>
+              <SelectItem value="shoe_size_asc">Shoe size small → large</SelectItem>
+              <SelectItem value="shoe_size_desc">Shoe size large → small</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </section>
 
       <section className="px-5 max-w-2xl mx-auto mt-4 space-y-2">
         {loading ? (
           <p className="text-center text-muted-foreground py-12">Loading…</p>
-        ) : filtered.length === 0 ? (
+        ) : results.length === 0 ? (
           <p className="text-center text-muted-foreground py-12">
             {customers.length === 0 ? "No customers yet." : "No matches."}
           </p>
         ) : (
-          filtered.map((c) => (
+          results.map((c) => (
             <Card
               key={c.id}
               onClick={() => nav(`/c/${c.id}`)}
