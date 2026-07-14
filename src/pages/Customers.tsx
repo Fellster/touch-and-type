@@ -47,11 +47,17 @@ export default function Customers() {
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
     if (!s) return customers;
-    return customers.filter(
-      (c) =>
-        c.name.toLowerCase().includes(s) ||
-        (c.phone ?? "").toLowerCase().includes(s) ||
-        (c.email ?? "").toLowerCase().includes(s),
+    return customers.filter((c) =>
+      [
+        c.name,
+        c.phone ?? "",
+        c.email ?? "",
+        (c.designers ?? []).join(" "),
+        (c.looking_for ?? []).join(" "),
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(s),
     );
   }, [customers, q]);
 
