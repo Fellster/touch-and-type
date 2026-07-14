@@ -358,17 +358,14 @@ export default function Index() {
           <p className="text-center text-muted-foreground py-12">Nothing yet. Add your first task above.</p>
         ) : (
           <>
-            <Section label="Overdue" items={groups.overdue} tone="text-destructive" groupKey="overdue" />
-            <Section label="Today" items={groups.today} groupKey="today" />
-            <Section label="Upcoming" items={groups.upcoming} groupKey="upcoming" />
-            <Section label="No date / Later" items={groups.later} groupKey="later" />
-            <Section
-              label="Completed"
-              items={groups.completed}
-              tone="text-muted-foreground"
-              groupKey="completed"
-              draggable={false}
-            />
+            {renderSection("Overdue", groups.overdue, "overdue", { tone: "text-destructive" })}
+            {renderSection("Today", groups.today, "today")}
+            {renderSection("Upcoming", groups.upcoming, "upcoming")}
+            {renderSection("No date / Later", groups.later, "later")}
+            {renderSection("Completed", groups.completed, "completed", {
+              tone: "text-muted-foreground",
+              draggable: false,
+            })}
           </>
         )}
       </section>
