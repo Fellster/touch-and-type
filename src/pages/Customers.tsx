@@ -139,7 +139,14 @@ export default function Customers() {
               <div className="flex-1 min-w-0">
                 <div className="font-medium truncate">{c.name}</div>
                 <div className="text-xs text-muted-foreground truncate">
-                  {c.phone || c.email || "—"}
+                  {[
+                    c.designers?.length ? c.designers.join(" · ") : null,
+                    c.looking_for?.length ? `Looking for: ${c.looking_for.join(" · ")}` : null,
+                    c.shoe_size ? `Size ${c.shoe_size}` : null,
+                    c.phone || c.email || "—",
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </div>
               </div>
             </Card>
