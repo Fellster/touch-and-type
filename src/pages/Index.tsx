@@ -251,19 +251,13 @@ export default function Index() {
     nav("/auth");
   };
 
-  const Section = ({
-    label,
-    items,
-    tone,
-    groupKey,
-    draggable = true,
-  }: {
-    label: string;
-    items: Todo[];
-    tone?: string;
-    groupKey: keyof typeof groups;
-    draggable?: boolean;
-  }) => {
+  const renderSection = (
+    label: string,
+    items: Todo[],
+    groupKey: keyof typeof groups,
+    opts: { tone?: string; draggable?: boolean } = {},
+  ) => {
+    const { tone, draggable = true } = opts;
     if (items.length === 0) return null;
     const list = (
       <div className="space-y-2">
@@ -273,7 +267,7 @@ export default function Index() {
       </div>
     );
     return (
-      <div className="space-y-2">
+      <div className="space-y-2" key={groupKey}>
         <h2 className={`font-serif text-lg ${tone ?? "text-foreground"}`}>{label}</h2>
         {draggable ? (
           <DndContext
