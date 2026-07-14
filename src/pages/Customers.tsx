@@ -111,7 +111,7 @@ export default function Customers() {
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search by name, phone, or email"
+            placeholder="Search name, phone, email, designer, or looking for"
             className="h-11 pl-9"
             aria-label="Search customers"
           />
