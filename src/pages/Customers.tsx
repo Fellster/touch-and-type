@@ -34,7 +34,7 @@ export default function Customers() {
     setLoading(true);
     const { data, error } = await supabase
       .from("customers")
-      .select("id,name,phone,email,designers,looking_for,updated_at")
+      .select("id,name,phone,email,designers,looking_for,shoe_size,updated_at")
       .order("updated_at", { ascending: false });
     if (error) toast.error(error.message);
     setCustomers((data ?? []) as Customer[]);
