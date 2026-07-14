@@ -155,6 +155,21 @@ export default function Customers() {
             aria-label="Search customers"
           />
         </div>
+        <div className="flex items-center gap-2">
+          <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+          <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
+            <SelectTrigger className="h-10 flex-1" aria-label="Sort customers">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="updated_desc">Recently updated</SelectItem>
+              <SelectItem value="designer_asc">Designer A–Z</SelectItem>
+              <SelectItem value="designer_desc">Designer Z–A</SelectItem>
+              <SelectItem value="shoe_size_asc">Shoe size small → large</SelectItem>
+              <SelectItem value="shoe_size_desc">Shoe size large → small</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </section>
 
       <section className="px-5 max-w-2xl mx-auto mt-4 space-y-2">
