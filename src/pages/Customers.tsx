@@ -160,12 +160,12 @@ export default function Customers() {
       <section className="px-5 max-w-2xl mx-auto mt-4 space-y-2">
         {loading ? (
           <p className="text-center text-muted-foreground py-12">Loading…</p>
-        ) : filtered.length === 0 ? (
+        ) : results.length === 0 ? (
           <p className="text-center text-muted-foreground py-12">
             {customers.length === 0 ? "No customers yet." : "No matches."}
           </p>
         ) : (
-          filtered.map((c) => (
+          results.map((c) => (
             <Card
               key={c.id}
               onClick={() => nav(`/c/${c.id}`)}
