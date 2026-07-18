@@ -181,28 +181,23 @@ export default function Customers() {
           </p>
         ) : (
           results.map((c) => (
-            <Card
+            <CustomerRow
               key={c.id}
-              onClick={() => nav(`/c/${c.id}`)}
-              className="p-3 flex items-center gap-3 cursor-pointer hover:bg-accent transition-colors"
-            >
-              <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center">
-                <User className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-medium truncate">{c.name}</div>
-                <div className="text-xs text-muted-foreground truncate">
-                  {[
-                    c.designers?.length ? c.designers.join(" · ") : null,
-                    c.looking_for?.length ? `Looking for: ${c.looking_for.join(" · ")}` : null,
-                    c.shoe_size ? `Size ${c.shoe_size}` : null,
-                    c.phone || c.email || "—",
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </div>
-              </div>
-            </Card>
+              c={c}
+              onOpen={() => nav(`/c/${c.id}`)}
+              onRename={async (name) => {
+                const prev = customers;
+                setCustomers((cs) => cs.map((x) => (x.id === c.id ? { ...x, name } : x)));
+                const { error } = await supabase
+                  .from("customers")
+                  .update({ name })
+                  .eq("id", c.id);
+                if (error) {
+                  toast.error(error.message);
+                  setCustomers(prev);
+                }
+              }}
+            />
           ))
         )}
       </section>
