@@ -126,12 +126,7 @@ function SortableTodo({
           />
         ) : (
           <p
-            onDoubleClick={() => {
-              setDraft(t.title);
-              setEditing(true);
-            }}
-            className={`whitespace-pre-wrap break-words line-clamp-3 cursor-text ${t.done ? "line-through text-muted-foreground" : ""}`}
-            title="Double-click to edit"
+            className={`whitespace-pre-wrap break-words line-clamp-3 ${t.done ? "line-through text-muted-foreground" : ""}`}
           >
             {t.title}
           </p>
@@ -147,9 +142,22 @@ function SortableTodo({
           <span className="text-xs text-muted-foreground truncate">{formatDue(t.due_at)}</span>
         </div>
       </div>
-      <Button variant="ghost" size="icon" onClick={() => onRemove(t.id)} aria-label="Delete task">
-        <Trash2 className="h-4 w-4" />
-      </Button>
+      <div className="flex flex-col gap-1">
+        <Button variant="ghost" size="icon" onClick={() => onRemove(t.id)} aria-label="Delete task">
+          <Trash2 className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => {
+            setDraft(t.title);
+            setEditing(true);
+          }}
+          aria-label="Edit task"
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+      </div>
     </Card>
   );
 }
