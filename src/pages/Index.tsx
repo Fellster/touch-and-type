@@ -214,6 +214,15 @@ export default function Index() {
     if (error) toast.error(error.message);
   };
 
+  const updateTitle = async (t: Todo, v: string) => {
+    setTodos((prev) => prev.map((x) => (x.id === t.id ? { ...x, title: v } : x)));
+    const { error } = await supabase.from("todos").update({ title: v }).eq("id", t.id);
+    if (error) {
+      toast.error(error.message);
+      load();
+    }
+  };
+
   const remove = async (id: string) => {
     setTodos((prev) => prev.filter((x) => x.id !== id));
     const { error } = await supabase.from("todos").delete().eq("id", id);
