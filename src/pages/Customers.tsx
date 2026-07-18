@@ -35,6 +35,83 @@ type Customer = {
 };
 
 export default function Customers() {
+  return <CustomersInner />;
+}
+
+function CustomerRow({
+  c,
+  onOpen,
+  onRename,
+}: {
+  c: Customer;
+  onOpen: () => void;
+  onRename: (name: string) => void | Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(c.name);
+  const commit = () => {
+    setEditing(false);
+    const v = draft.trim();
+    if (v && v !== c.name) onRename(v);
+    else setDraft(c.name);
+  };
+  return (
+    <Card
+      onClick={() => !editing && onOpen()}
+      className="p-3 flex items-center gap-3 cursor-pointer hover:bg-accent transition-colors"
+    >
+      <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center">
+        <User className="h-4 w-4 text-muted-foreground" />
+      </div>
+      <div className="flex-1 min-w-0" onClick={(e) => editing && e.stopPropagation()}>
+        {editing ? (
+          <Input
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                commit();
+              } else if (e.key === "Escape") {
+                setDraft(c.name);
+                setEditing(false);
+              }
+            }}
+            className="h-8 text-sm"
+            aria-label="Edit customer name"
+          />
+        ) : (
+          <div
+            className="font-medium truncate"
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              setDraft(c.name);
+              setEditing(true);
+            }}
+            title="Double-click to edit"
+          >
+            {c.name}
+          </div>
+        )}
+        <div className="text-xs text-muted-foreground truncate">
+          {[
+            c.designers?.length ? c.designers.join(" · ") : null,
+            c.looking_for?.length ? `Looking for: ${c.looking_for.join(" · ")}` : null,
+            c.shoe_size ? `Size ${c.shoe_size}` : null,
+            c.phone || c.email || "—",
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function CustomersInner() {
   const { user } = useAuth();
   const nav = useNavigate();
   const [sp] = useSearchParams();
@@ -181,28 +258,23 @@ export default function Customers() {
           </p>
         ) : (
           results.map((c) => (
-            <Card
+            <CustomerRow
               key={c.id}
-              onClick={() => nav(`/c/${c.id}`)}
-              className="p-3 flex items-center gap-3 cursor-pointer hover:bg-accent transition-colors"
-            >
-              <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center">
-                <User className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-medium truncate">{c.name}</div>
-                <div className="text-xs text-muted-foreground truncate">
-                  {[
-                    c.designers?.length ? c.designers.join(" · ") : null,
-                    c.looking_for?.length ? `Looking for: ${c.looking_for.join(" · ")}` : null,
-                    c.shoe_size ? `Size ${c.shoe_size}` : null,
-                    c.phone || c.email || "—",
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </div>
-              </div>
-            </Card>
+              c={c}
+              onOpen={() => nav(`/c/${c.id}`)}
+              onRename={async (name) => {
+                const prev = customers;
+                setCustomers((cs) => cs.map((x) => (x.id === c.id ? { ...x, name } : x)));
+                const { error } = await supabase
+                  .from("customers")
+                  .update({ name })
+                  .eq("id", c.id);
+                if (error) {
+                  toast.error(error.message);
+                  setCustomers(prev);
+                }
+              }}
+            />
           ))
         )}
       </section>
