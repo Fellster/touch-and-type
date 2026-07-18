@@ -60,18 +60,28 @@ function SortableTodo({
   t,
   onToggle,
   onUpdateDue,
+  onUpdateTitle,
   onRemove,
 }: {
   t: Todo;
   onToggle: (t: Todo) => void;
   onUpdateDue: (t: Todo, v: string) => void;
+  onUpdateTitle: (t: Todo, v: string) => void;
   onRemove: (id: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: t.id });
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(t.title);
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 20 : undefined,
+  };
+  const commit = () => {
+    setEditing(false);
+    const v = draft.trim();
+    if (v && v !== t.title) onUpdateTitle(t, v);
+    else setDraft(t.title);
   };
   return (
     <Card
@@ -95,7 +105,37 @@ function SortableTodo({
         aria-label={`Mark ${t.title} ${t.done ? "not done" : "done"}`}
       />
       <div className="flex-1 min-w-0">
-        <p className={`truncate ${t.done ? "line-through text-muted-foreground" : ""}`}>{t.title}</p>
+        {editing ? (
+          <textarea
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                commit();
+              } else if (e.key === "Escape") {
+                setDraft(t.title);
+                setEditing(false);
+              }
+            }}
+            rows={3}
+            className="w-full resize-none bg-transparent border border-input rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            aria-label="Edit task title"
+          />
+        ) : (
+          <p
+            onDoubleClick={() => {
+              setDraft(t.title);
+              setEditing(true);
+            }}
+            className={`whitespace-pre-wrap break-words line-clamp-3 cursor-text ${t.done ? "line-through text-muted-foreground" : ""}`}
+            title="Double-click to edit"
+          >
+            {t.title}
+          </p>
+        )}
         <div className="mt-1 flex items-center gap-2">
           <Input
             type="datetime-local"
