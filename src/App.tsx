@@ -30,6 +30,7 @@ const App = () => (
             <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
             <Route path="/c/:id" element={<ProtectedRoute><CustomerDetail /></ProtectedRoute>} />
             <Route path="/fields" element={<ProtectedRoute><ManageFields /></ProtectedRoute>} />
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
