@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, ArrowUpDown, Plus, Search, User } from "lucide-react";
+import { ArrowLeft, ArrowUpDown, Pencil, Plus, Search, User } from "lucide-react";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
 
@@ -84,17 +84,7 @@ function CustomerRow({
             aria-label="Edit customer name"
           />
         ) : (
-          <div
-            className="font-medium truncate"
-            onDoubleClick={(e) => {
-              e.stopPropagation();
-              setDraft(c.name);
-              setEditing(true);
-            }}
-            title="Double-click to edit"
-          >
-            {c.name}
-          </div>
+          <div className="font-medium truncate">{c.name}</div>
         )}
         <div className="text-xs text-muted-foreground truncate">
           {[
@@ -107,6 +97,18 @@ function CustomerRow({
             .join(" · ")}
         </div>
       </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={(e) => {
+          e.stopPropagation();
+          setDraft(c.name);
+          setEditing(true);
+        }}
+        aria-label="Edit customer name"
+      >
+        <Pencil className="h-4 w-4" />
+      </Button>
     </Card>
   );
 }
