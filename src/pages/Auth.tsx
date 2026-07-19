@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,15 +15,24 @@ const schema = z.object({
   password: z.string().min(6, "At least 6 characters").max(72),
 });
 
+// Only allow same-origin relative paths as post-auth redirect targets.
+const safeNext = (v: string | null): string => {
+  if (!v) return "/";
+  if (!v.startsWith("/") || v.startsWith("//")) return "/";
+  return v;
+};
+
 export default function Auth() {
   const { user, loading } = useAuth();
+  const [params] = useSearchParams();
+  const next = safeNext(params.get("next"));
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
   if (loading) return null;
-  if (user) return <Navigate to="/" replace />;
+  if (user) return <Navigate to={next} replace />;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +47,7 @@ export default function Auth() {
         const { error } = await supabase.auth.signUp({
           email: parsed.data.email,
           password: parsed.data.password,
-          options: { emailRedirectTo: `${window.location.origin}/` },
+          options: { emailRedirectTo: `${window.location.origin}${next}` },
         });
         if (error) throw error;
         toast.success("Account created. You're signed in.");
@@ -55,6 +64,7 @@ export default function Auth() {
       setBusy(false);
     }
   };
+
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4">
