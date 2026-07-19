@@ -44,6 +44,31 @@ export default function CustomerDetail() {
   const fileInput = useRef<HTMLInputElement>(null);
   const saveTimer = useRef<number | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const [todoOpen, setTodoOpen] = useState(false);
+  const [todoText, setTodoText] = useState("");
+  const [todoDue, setTodoDue] = useState("");
+
+  const openTodo = () => {
+    setTodoText("");
+    setTodoDue("");
+    setTodoOpen(true);
+  };
+
+  const saveTodo = async () => {
+    if (!customer || !user) return;
+    const first = todoText.trim();
+    if (!first) return toast.error("Enter a to-do");
+    const contact = customer.phone || customer.email || "";
+    const title = [first, customer.name, contact].filter(Boolean).join("\n");
+    const { error } = await supabase.from("todos").insert({
+      user_id: user.id,
+      title,
+      due_at: todoDue ? new Date(todoDue).toISOString() : null,
+    });
+    if (error) return toast.error(error.message);
+    setTodoOpen(false);
+    toast.success("To-do added");
+  };
 
   const load = async () => {
     if (!id) return;
