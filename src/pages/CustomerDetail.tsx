@@ -8,10 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Trash2, Plus, X, Camera, Pencil, Sparkles, Copy, Mail, Phone } from "lucide-react";
+import { ArrowLeft, Trash2, Plus, X, Camera, Pencil, Sparkles, Copy, Mail, Phone, ListTodo } from "lucide-react";
 import { toast } from "sonner";
 import DrawingCanvas from "@/components/DrawingCanvas";
 import SEO from "@/components/SEO";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 type Customer = {
   id: string;
