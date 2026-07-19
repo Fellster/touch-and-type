@@ -11,6 +11,7 @@ import Preview from "./pages/Preview.tsx";
 import CustomerDetail from "./pages/CustomerDetail.tsx";
 import Customers from "./pages/Customers.tsx";
 import ManageFields from "./pages/ManageFields.tsx";
+import OAuthConsent from "./pages/OAuthConsent.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
