@@ -8,10 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Trash2, Plus, X, Camera, Pencil, Sparkles, Copy, Mail, Phone } from "lucide-react";
+import { ArrowLeft, Trash2, Plus, X, Camera, Pencil, Sparkles, Copy, Mail, Phone, ListTodo } from "lucide-react";
 import { toast } from "sonner";
 import DrawingCanvas from "@/components/DrawingCanvas";
 import SEO from "@/components/SEO";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 type Customer = {
   id: string;
@@ -43,6 +44,31 @@ export default function CustomerDetail() {
   const fileInput = useRef<HTMLInputElement>(null);
   const saveTimer = useRef<number | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const [todoOpen, setTodoOpen] = useState(false);
+  const [todoText, setTodoText] = useState("");
+  const [todoDue, setTodoDue] = useState("");
+
+  const openTodo = () => {
+    setTodoText("");
+    setTodoDue("");
+    setTodoOpen(true);
+  };
+
+  const saveTodo = async () => {
+    if (!customer || !user) return;
+    const first = todoText.trim();
+    if (!first) return toast.error("Enter a to-do");
+    const contact = customer.phone || customer.email || "";
+    const title = [first, customer.name, contact].filter(Boolean).join("\n");
+    const { error } = await supabase.from("todos").insert({
+      user_id: user.id,
+      title,
+      due_at: todoDue ? new Date(todoDue).toISOString() : null,
+    });
+    if (error) return toast.error(error.message);
+    setTodoOpen(false);
+    toast.success("To-do added");
+  };
 
   const load = async () => {
     if (!id) return;
@@ -186,10 +212,47 @@ export default function CustomerDetail() {
         description={`Customer notes for ${customer.name || "this customer"} — designers, sizes, wishlist, and handwritten notes.`}
         path={`/c/${customer.id}`}
       />
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-start mb-4">
         <Button variant="ghost" size="sm" onClick={() => nav("/")}><ArrowLeft className="h-4 w-4 mr-1" />Back</Button>
-        <Button variant="ghost" size="sm" onClick={removeCustomer} aria-label="Delete this customer"><Trash2 className="h-4 w-4" /></Button>
+        <div className="flex flex-col gap-2 items-end">
+          <Button variant="ghost" size="sm" onClick={removeCustomer} aria-label="Delete this customer"><Trash2 className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="sm" onClick={openTodo} aria-label="Add to-do for this customer"><ListTodo className="h-4 w-4" /></Button>
+        </div>
       </div>
+
+      <Dialog open={todoOpen} onOpenChange={setTodoOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New to-do</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="todo-text">To-do</Label>
+              <Input
+                id="todo-text"
+                autoFocus
+                value={todoText}
+                onChange={(e) => setTodoText(e.target.value)}
+                placeholder="What needs doing?"
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); saveTodo(); } }}
+              />
+            </div>
+            <div className="text-sm text-muted-foreground border rounded-md p-2 bg-muted/40 space-y-0.5">
+              <div>{customer.name || "(no name)"}</div>
+              <div>{customer.phone || customer.email || "(no contact)"}</div>
+            </div>
+            <div>
+              <Label htmlFor="todo-due">Due (optional)</Label>
+              <Input id="todo-due" type="datetime-local" value={todoDue} onChange={(e) => setTodoDue(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setTodoOpen(false)}>Cancel</Button>
+            <Button onClick={saveTodo}>Add to-do</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       <h1 className="sr-only">{customer.name || "Untitled customer"}</h1>
       <label htmlFor="customer-name" className="sr-only">Customer name</label>
