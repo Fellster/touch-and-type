@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, ArrowUpDown, Plus, Search, User } from "lucide-react";
+import { ArrowLeft, ArrowUpDown, Pencil, Plus, Search, User } from "lucide-react";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
 
