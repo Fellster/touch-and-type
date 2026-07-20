@@ -372,9 +372,12 @@ export default function CustomerDetail() {
       </Card>
 
       <section className="mt-6">
-        <h2 className="font-serif text-2xl mb-2">
-          <label htmlFor="cust-notes">Notes</label>
-        </h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="font-serif text-2xl">
+            <label htmlFor="cust-notes">Notes</label>
+          </h2>
+          <VoiceCapture context="notes" onCommit={applyVoice} variant="outline" size="sm" title="Dictate note" />
+        </div>
         <Textarea
           id="cust-notes"
           value={customer.typed_notes ?? ""}
