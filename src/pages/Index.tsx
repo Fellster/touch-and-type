@@ -26,6 +26,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import VoiceCapture, { type ParsedResult } from "@/components/VoiceCapture";
 
 type Todo = {
   id: string;
