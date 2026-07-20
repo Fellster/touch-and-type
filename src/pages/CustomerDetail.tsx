@@ -71,6 +71,50 @@ export default function CustomerDetail() {
     toast.success("To-do added");
   };
 
+  const applyVoice = async (r: ParsedResult): Promise<void> => {
+    if (!customer) return;
+    const patch: Partial<Customer> = {};
+    if (r.intent === "customer" && r.customer) {
+      const c = r.customer;
+      if (c.name) patch.name = c.name;
+      if (c.phone) patch.phone = c.phone;
+      if (c.email) patch.email = c.email;
+      if (c.shoe_size != null) patch.shoe_size = c.shoe_size;
+      if (c.width) patch.width = c.width;
+      if (c.designers?.length)
+        patch.designers = Array.from(new Set([...(customer.designers ?? []), ...c.designers]));
+      if (c.looking_for?.length)
+        patch.looking_for = Array.from(new Set([...(customer.looking_for ?? []), ...c.looking_for]));
+      if (c.notes) {
+        const prev = customer.typed_notes ?? "";
+        patch.typed_notes = prev ? `${prev}\n${c.notes}` : c.notes;
+      }
+      if (Object.keys(patch).length) update(patch);
+      toast.success("Fields updated");
+    } else if (r.intent === "note" || r.intent === "unknown") {
+      const text = (r.note_append || r.transcript || "").trim();
+      if (!text) return;
+      const prev = customer.typed_notes ?? "";
+      const stamp = new Date().toLocaleString();
+      const appended = prev ? `${prev}\n[${stamp}] ${text}` : `[${stamp}] ${text}`;
+      update({ typed_notes: appended });
+      toast.success("Note appended");
+    } else if (r.intent === "todo" && r.todo?.title && user) {
+      const contact = customer.phone || customer.email || "";
+      const title = [r.todo.title, customer.name, contact].filter(Boolean).join("\n");
+      const { error } = await supabase.from("todos").insert({
+        user_id: user.id,
+        title,
+        due_at: r.todo.due_at,
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success("To-do added");
+    }
+  };
+
   const load = async () => {
     if (!id) return;
     const [c, f, d, p] = await Promise.all([
@@ -218,6 +262,7 @@ export default function CustomerDetail() {
         <div className="flex flex-col gap-2 items-end">
           <Button variant="ghost" size="sm" onClick={removeCustomer} aria-label="Delete this customer"><Trash2 className="h-4 w-4" /></Button>
           <Button variant="ghost" size="sm" onClick={openTodo} aria-label="Add to-do for this customer"><ListTodo className="h-4 w-4" /></Button>
+          <VoiceCapture context="customer" onCommit={applyVoice} variant="ghost" size="sm" title="Voice fill fields / append note" />
         </div>
       </div>
 
