@@ -13,16 +13,14 @@ export default function FloatingMic() {
   if (!user) return null;
   if (HIDE_ON.some((p) => loc.pathname.startsWith(p))) return null;
 
-  const handle = async (r: ParsedResult) => {
+  const handle = async (r: ParsedResult): Promise<void> => {
     const t = r.transcript.toLowerCase().trim();
 
-    // Smart open commands
     if (/^(new|add|create)\s+customer\b/.test(t) && !r.customer?.name) {
       nav("/customers?add=1");
       return;
     }
     if (/^(new|add|create)\s+(task|todo|to.?do)\b/.test(t) && !r.todo?.title) {
-      // no fields parsed — just focus the todo input on home
       nav("/");
       return;
     }
@@ -34,7 +32,10 @@ export default function FloatingMic() {
         title: r.todo.title,
         due_at: r.todo.due_at,
       });
-      if (error) return toast.error(error.message);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
       toast.success("To-do added");
       nav("/");
       return;
@@ -57,7 +58,10 @@ export default function FloatingMic() {
         })
         .select("id")
         .single();
-      if (error) return toast.error(error.message);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
       toast.success("Customer added");
       nav(`/c/${data.id}`);
       return;
