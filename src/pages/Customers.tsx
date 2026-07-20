@@ -15,6 +15,7 @@ import {
 import { ArrowLeft, ArrowUpDown, Pencil, Plus, Search, User } from "lucide-react";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
+import VoiceCapture, { type ParsedResult } from "@/components/VoiceCapture";
 
 type SortOption =
   | "updated_desc"
@@ -193,6 +194,34 @@ function CustomersInner() {
     nav(`/c/${data.id}`);
   };
 
+  const createFromVoice = async (r: ParsedResult): Promise<void> => {
+    if (!user) return;
+    const c = r.customer;
+    const name = c?.name || r.transcript.trim();
+    if (!name) return;
+    const { data, error } = await supabase
+      .from("customers")
+      .insert({
+        user_id: user.id,
+        name,
+        phone: c?.phone ?? null,
+        email: c?.email ?? null,
+        designers: c?.designers ?? [],
+        looking_for: c?.looking_for ?? [],
+        shoe_size: c?.shoe_size ?? null,
+        width: c?.width ?? null,
+        typed_notes: c?.notes ?? null,
+      })
+      .select("id")
+      .single();
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Customer added");
+    nav(`/c/${data.id}`);
+  };
+
   return (
     <main className="min-h-screen pb-24">
       <SEO title="Customers — Atelier" description="Search and add customer records." path="/customers" />
@@ -201,10 +230,13 @@ function CustomersInner() {
           <Button variant="ghost" size="icon" onClick={() => nav("/")} aria-label="Back">
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <Button size="sm" onClick={() => setAdding((v) => !v)}>
-            <Plus className="h-4 w-4 mr-1" />
-            Add customer
-          </Button>
+          <div className="flex gap-1">
+            <VoiceCapture context="customer" onCommit={createFromVoice} variant="outline" size="sm" title="Add customer by voice" />
+            <Button size="sm" onClick={() => setAdding((v) => !v)}>
+              <Plus className="h-4 w-4 mr-1" />
+              Add customer
+            </Button>
+          </div>
         </div>
         <h1 className="font-serif text-3xl">Customers</h1>
         <p className="text-sm text-muted-foreground mt-1">{customers.length} total</p>
