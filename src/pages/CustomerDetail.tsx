@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import DrawingCanvas from "@/components/DrawingCanvas";
 import SEO from "@/components/SEO";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import VoiceCapture, { type ParsedResult } from "@/components/VoiceCapture";
 
 type Customer = {
   id: string;
