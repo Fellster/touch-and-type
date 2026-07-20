@@ -26,6 +26,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import VoiceCapture, { type ParsedResult } from "@/components/VoiceCapture";
 
 type Todo = {
   id: string;
@@ -240,6 +241,25 @@ export default function Index() {
     }
   };
 
+  const saveVoiceTodo = async (r: ParsedResult): Promise<void> => {
+    if (!user) return;
+    const t = r.todo?.title || r.transcript;
+    if (!t.trim()) return;
+    const maxPos = todos.reduce((m, x) => Math.max(m, x.position ?? 0), 0);
+    const { error } = await supabase.from("todos").insert({
+      user_id: user.id,
+      title: t.trim(),
+      due_at: r.todo?.due_at ?? null,
+      position: maxPos + 1,
+    });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("To-do added");
+    load();
+  };
+
   const groups = useMemo(() => {
     const now = new Date();
     const startOfTomorrow = new Date(now);
@@ -387,6 +407,13 @@ export default function Index() {
               onChange={(e) => setDue(e.target.value)}
               className="flex-1 h-11"
               aria-label="Due date and time"
+            />
+            <VoiceCapture
+              context="todo"
+              onCommit={saveVoiceTodo}
+              variant="outline"
+              className="h-11 w-11"
+              title="Add task by voice"
             />
             <Button type="submit" className="h-11">
               <Plus className="h-4 w-4 mr-1" />

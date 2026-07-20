@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import DrawingCanvas from "@/components/DrawingCanvas";
 import SEO from "@/components/SEO";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import VoiceCapture, { type ParsedResult } from "@/components/VoiceCapture";
 
 type Customer = {
   id: string;
@@ -68,6 +69,50 @@ export default function CustomerDetail() {
     if (error) return toast.error(error.message);
     setTodoOpen(false);
     toast.success("To-do added");
+  };
+
+  const applyVoice = async (r: ParsedResult): Promise<void> => {
+    if (!customer) return;
+    const patch: Partial<Customer> = {};
+    if (r.intent === "customer" && r.customer) {
+      const c = r.customer;
+      if (c.name) patch.name = c.name;
+      if (c.phone) patch.phone = c.phone;
+      if (c.email) patch.email = c.email;
+      if (c.shoe_size != null) patch.shoe_size = c.shoe_size;
+      if (c.width) patch.width = c.width;
+      if (c.designers?.length)
+        patch.designers = Array.from(new Set([...(customer.designers ?? []), ...c.designers]));
+      if (c.looking_for?.length)
+        patch.looking_for = Array.from(new Set([...(customer.looking_for ?? []), ...c.looking_for]));
+      if (c.notes) {
+        const prev = customer.typed_notes ?? "";
+        patch.typed_notes = prev ? `${prev}\n${c.notes}` : c.notes;
+      }
+      if (Object.keys(patch).length) update(patch);
+      toast.success("Fields updated");
+    } else if (r.intent === "note" || r.intent === "unknown") {
+      const text = (r.note_append || r.transcript || "").trim();
+      if (!text) return;
+      const prev = customer.typed_notes ?? "";
+      const stamp = new Date().toLocaleString();
+      const appended = prev ? `${prev}\n[${stamp}] ${text}` : `[${stamp}] ${text}`;
+      update({ typed_notes: appended });
+      toast.success("Note appended");
+    } else if (r.intent === "todo" && r.todo?.title && user) {
+      const contact = customer.phone || customer.email || "";
+      const title = [r.todo.title, customer.name, contact].filter(Boolean).join("\n");
+      const { error } = await supabase.from("todos").insert({
+        user_id: user.id,
+        title,
+        due_at: r.todo.due_at,
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success("To-do added");
+    }
   };
 
   const load = async () => {
@@ -217,6 +262,7 @@ export default function CustomerDetail() {
         <div className="flex flex-col gap-2 items-end">
           <Button variant="ghost" size="sm" onClick={removeCustomer} aria-label="Delete this customer"><Trash2 className="h-4 w-4" /></Button>
           <Button variant="ghost" size="sm" onClick={openTodo} aria-label="Add to-do for this customer"><ListTodo className="h-4 w-4" /></Button>
+          <VoiceCapture context="customer" onCommit={applyVoice} variant="ghost" size="sm" title="Voice fill fields / append note" />
         </div>
       </div>
 
@@ -326,9 +372,12 @@ export default function CustomerDetail() {
       </Card>
 
       <section className="mt-6">
-        <h2 className="font-serif text-2xl mb-2">
-          <label htmlFor="cust-notes">Notes</label>
-        </h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="font-serif text-2xl">
+            <label htmlFor="cust-notes">Notes</label>
+          </h2>
+          <VoiceCapture context="notes" onCommit={applyVoice} variant="outline" size="sm" title="Dictate note" />
+        </div>
         <Textarea
           id="cust-notes"
           value={customer.typed_notes ?? ""}
