@@ -208,19 +208,27 @@ export default function Index() {
 
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim()) return toast.error("Type what you need to do first.");
+    let uid = user?.id;
+    if (!uid) {
+      const { data } = await supabase.auth.getUser();
+      uid = data.user?.id;
+    }
+    if (!uid) return toast.error("You're signed out — sign in to add a task.");
     const maxPos = todos.reduce((m, t) => Math.max(m, t.position ?? 0), 0);
     const { error } = await supabase.from("todos").insert({
-      user_id: user!.id,
+      user_id: uid,
       title: title.trim(),
       due_at: fromLocalInput(due),
       position: maxPos + 1,
     });
     if (error) return toast.error(error.message);
+    toast.success("Task added");
     setTitle("");
     setDue("");
     load();
   };
+
 
   const toggle = async (t: Todo) => {
     setTodos((prev) => prev.map((x) => (x.id === t.id ? { ...x, done: !x.done } : x)));
