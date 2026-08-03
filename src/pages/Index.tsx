@@ -508,6 +508,70 @@ export default function Index() {
           </>
         )}
       </section>
+
+      <Dialog open={!!pendingDelete} onOpenChange={(o) => !o && setPendingDelete(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete task</DialogTitle>
+            <DialogDescription>
+              Save this task to a customer's notes before deleting it?
+            </DialogDescription>
+          </DialogHeader>
+
+          <p className="text-sm whitespace-pre-wrap border rounded px-3 py-2 bg-muted/40">
+            {pendingDelete?.title}
+          </p>
+
+          <div className="space-y-2">
+            <Input
+              value={customerQuery}
+              onChange={(e) => setCustomerQuery(e.target.value)}
+              placeholder="Search customers…"
+              aria-label="Search customers"
+            />
+            <div className="max-h-48 overflow-y-auto space-y-1">
+              {customers
+                .filter((c) => c.name.toLowerCase().includes(customerQuery.trim().toLowerCase()))
+                .slice(0, 50)
+                .map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setSelectedCustomer(c)}
+                    className={`w-full text-left text-sm px-3 py-2 rounded border ${
+                      selectedCustomer?.id === c.id ? "border-primary bg-accent" : "border-transparent hover:bg-accent"
+                    }`}
+                  >
+                    {c.name}
+                  </button>
+                ))}
+              {customers.length === 0 && (
+                <p className="text-xs text-muted-foreground px-1">No customers found.</p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="ghost" onClick={() => setPendingDelete(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                const id = pendingDelete!.id;
+                setPendingDelete(null);
+                doDelete(id);
+              }}
+            >
+              Delete without saving
+            </Button>
+            <Button disabled={!selectedCustomer || savingNote} onClick={saveToNotesAndDelete}>
+              {savingNote ? "Saving…" : "Save to notes & delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
+
   );
 }
