@@ -27,6 +27,16 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import VoiceCapture, { type ParsedResult } from "@/components/VoiceCapture";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+type CustomerLite = { id: string; name: string; typed_notes: string | null };
 
 type Todo = {
   id: string;
