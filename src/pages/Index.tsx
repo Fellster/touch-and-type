@@ -276,7 +276,7 @@ export default function Index() {
   const saveToNotesAndDelete = async () => {
     if (!pendingDelete || !selectedCustomer) return;
     setSavingNote(true);
-    const stamp = new Date().toLocaleString();
+    const stamp = new Date().toLocaleDateString();
     const next = [selectedCustomer.typed_notes, `[${stamp}] ${pendingDelete.title}`]
       .filter(Boolean)
       .join("\n");
