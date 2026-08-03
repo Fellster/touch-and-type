@@ -242,7 +242,7 @@ export default function Index() {
     }
   };
 
-  const remove = async (id: string) => {
+  const doDelete = async (id: string) => {
     setTodos((prev) => prev.filter((x) => x.id !== id));
     const { error } = await supabase.from("todos").delete().eq("id", id);
     if (error) {
@@ -250,6 +250,46 @@ export default function Index() {
       load();
     }
   };
+
+  const requestRemove = (id: string) => {
+    const t = todos.find((x) => x.id === id) ?? null;
+    setPendingDelete(t);
+    setCustomerQuery("");
+    setSelectedCustomer(null);
+    if (customers.length === 0) loadCustomers();
+  };
+
+  const loadCustomers = async () => {
+    const { data, error } = await supabase
+      .from("customers")
+      .select("id,name,typed_notes")
+      .order("name", { ascending: true });
+    if (error) return toast.error(error.message);
+    setCustomers((data ?? []) as CustomerLite[]);
+  };
+
+  const saveToNotesAndDelete = async () => {
+    if (!pendingDelete || !selectedCustomer) return;
+    setSavingNote(true);
+    const stamp = new Date().toLocaleString();
+    const next = [selectedCustomer.typed_notes, `[${stamp}] ${pendingDelete.title}`]
+      .filter(Boolean)
+      .join("\n");
+    const { error } = await supabase
+      .from("customers")
+      .update({ typed_notes: next })
+      .eq("id", selectedCustomer.id);
+    setSavingNote(false);
+    if (error) return toast.error(error.message);
+    toast.success(`Saved to ${selectedCustomer.name}'s notes`);
+    setCustomers((prev) =>
+      prev.map((c) => (c.id === selectedCustomer.id ? { ...c, typed_notes: next } : c)),
+    );
+    const id = pendingDelete.id;
+    setPendingDelete(null);
+    await doDelete(id);
+  };
+
 
   const saveVoiceTodo = async (r: ParsedResult): Promise<void> => {
     if (!user) return;
