@@ -394,7 +394,7 @@ export default function Index() {
     const list = (
       <div className="space-y-2">
         {items.map((t) => (
-          <SortableTodo key={t.id} t={t} onToggle={toggle} onUpdateDue={updateDue} onUpdateTitle={updateTitle} onRemove={remove} />
+          <SortableTodo key={t.id} t={t} onToggle={toggle} onUpdateDue={updateDue} onUpdateTitle={updateTitle} onRemove={requestRemove} />
         ))}
       </div>
     );
