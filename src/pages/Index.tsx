@@ -180,6 +180,11 @@ export default function Index() {
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
   const [due, setDue] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<Todo | null>(null);
+  const [customers, setCustomers] = useState<CustomerLite[]>([]);
+  const [customerQuery, setCustomerQuery] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerLite | null>(null);
+  const [savingNote, setSavingNote] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
