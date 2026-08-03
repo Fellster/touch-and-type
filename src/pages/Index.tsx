@@ -27,6 +27,16 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import VoiceCapture, { type ParsedResult } from "@/components/VoiceCapture";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+type CustomerLite = { id: string; name: string; typed_notes: string | null };
 
 type Todo = {
   id: string;
@@ -170,6 +180,11 @@ export default function Index() {
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
   const [due, setDue] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<Todo | null>(null);
+  const [customers, setCustomers] = useState<CustomerLite[]>([]);
+  const [customerQuery, setCustomerQuery] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerLite | null>(null);
+  const [savingNote, setSavingNote] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -232,7 +247,7 @@ export default function Index() {
     }
   };
 
-  const remove = async (id: string) => {
+  const doDelete = async (id: string) => {
     setTodos((prev) => prev.filter((x) => x.id !== id));
     const { error } = await supabase.from("todos").delete().eq("id", id);
     if (error) {
@@ -240,6 +255,46 @@ export default function Index() {
       load();
     }
   };
+
+  const requestRemove = (id: string) => {
+    const t = todos.find((x) => x.id === id) ?? null;
+    setPendingDelete(t);
+    setCustomerQuery("");
+    setSelectedCustomer(null);
+    if (customers.length === 0) loadCustomers();
+  };
+
+  const loadCustomers = async () => {
+    const { data, error } = await supabase
+      .from("customers")
+      .select("id,name,typed_notes")
+      .order("name", { ascending: true });
+    if (error) return toast.error(error.message);
+    setCustomers((data ?? []) as CustomerLite[]);
+  };
+
+  const saveToNotesAndDelete = async () => {
+    if (!pendingDelete || !selectedCustomer) return;
+    setSavingNote(true);
+    const stamp = new Date().toLocaleString();
+    const next = [selectedCustomer.typed_notes, `[${stamp}] ${pendingDelete.title}`]
+      .filter(Boolean)
+      .join("\n");
+    const { error } = await supabase
+      .from("customers")
+      .update({ typed_notes: next })
+      .eq("id", selectedCustomer.id);
+    setSavingNote(false);
+    if (error) return toast.error(error.message);
+    toast.success(`Saved to ${selectedCustomer.name}'s notes`);
+    setCustomers((prev) =>
+      prev.map((c) => (c.id === selectedCustomer.id ? { ...c, typed_notes: next } : c)),
+    );
+    const id = pendingDelete.id;
+    setPendingDelete(null);
+    await doDelete(id);
+  };
+
 
   const saveVoiceTodo = async (r: ParsedResult): Promise<void> => {
     if (!user) return;
@@ -339,7 +394,7 @@ export default function Index() {
     const list = (
       <div className="space-y-2">
         {items.map((t) => (
-          <SortableTodo key={t.id} t={t} onToggle={toggle} onUpdateDue={updateDue} onUpdateTitle={updateTitle} onRemove={remove} />
+          <SortableTodo key={t.id} t={t} onToggle={toggle} onUpdateDue={updateDue} onUpdateTitle={updateTitle} onRemove={requestRemove} />
         ))}
       </div>
     );
@@ -453,6 +508,70 @@ export default function Index() {
           </>
         )}
       </section>
+
+      <Dialog open={!!pendingDelete} onOpenChange={(o) => !o && setPendingDelete(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete task</DialogTitle>
+            <DialogDescription>
+              Save this task to a customer's notes before deleting it?
+            </DialogDescription>
+          </DialogHeader>
+
+          <p className="text-sm whitespace-pre-wrap border rounded px-3 py-2 bg-muted/40">
+            {pendingDelete?.title}
+          </p>
+
+          <div className="space-y-2">
+            <Input
+              value={customerQuery}
+              onChange={(e) => setCustomerQuery(e.target.value)}
+              placeholder="Search customers…"
+              aria-label="Search customers"
+            />
+            <div className="max-h-48 overflow-y-auto space-y-1">
+              {customers
+                .filter((c) => c.name.toLowerCase().includes(customerQuery.trim().toLowerCase()))
+                .slice(0, 50)
+                .map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setSelectedCustomer(c)}
+                    className={`w-full text-left text-sm px-3 py-2 rounded border ${
+                      selectedCustomer?.id === c.id ? "border-primary bg-accent" : "border-transparent hover:bg-accent"
+                    }`}
+                  >
+                    {c.name}
+                  </button>
+                ))}
+              {customers.length === 0 && (
+                <p className="text-xs text-muted-foreground px-1">No customers found.</p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="ghost" onClick={() => setPendingDelete(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                const id = pendingDelete!.id;
+                setPendingDelete(null);
+                doDelete(id);
+              }}
+            >
+              Delete without saving
+            </Button>
+            <Button disabled={!selectedCustomer || savingNote} onClick={saveToNotesAndDelete}>
+              {savingNote ? "Saving…" : "Save to notes & delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
+
   );
 }
