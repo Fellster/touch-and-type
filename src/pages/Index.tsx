@@ -285,7 +285,8 @@ export default function Index() {
     if (!pendingDelete || !selectedCustomer) return;
     setSavingNote(true);
     const stamp = new Date().toLocaleDateString();
-    const next = [selectedCustomer.typed_notes, `[${stamp}] ${pendingDelete.title}`]
+    const todoText = pendingDelete.title.split("\n")[0].trim();
+    const next = [selectedCustomer.typed_notes, `[${stamp}] ${todoText}`]
       .filter(Boolean)
       .join("\n");
     const { error } = await supabase
