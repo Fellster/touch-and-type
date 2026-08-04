@@ -264,22 +264,38 @@ export default function Index() {
     }
   };
 
-  const requestRemove = (id: string) => {
+  const requestRemove = async (id: string) => {
     const t = todos.find((x) => x.id === id) ?? null;
     setPendingDelete(t);
     setCustomerQuery("");
     setSelectedCustomer(null);
-    if (customers.length === 0) loadCustomers();
+    let list = customers;
+    if (list.length === 0) list = await loadCustomers();
+    // Tasks created from a customer page put the customer name on line 2
+    const nameLine = t?.title.split("\n")[1]?.trim().toLowerCase();
+    if (nameLine) {
+      const match = list.find((c) => c.name.trim().toLowerCase() === nameLine);
+      if (match) {
+        setSelectedCustomer(match);
+        setCustomerQuery(match.name);
+      }
+    }
   };
 
-  const loadCustomers = async () => {
+  const loadCustomers = async (): Promise<CustomerLite[]> => {
     const { data, error } = await supabase
       .from("customers")
       .select("id,name,typed_notes")
       .order("name", { ascending: true });
-    if (error) return toast.error(error.message);
-    setCustomers((data ?? []) as CustomerLite[]);
+    if (error) {
+      toast.error(error.message);
+      return [];
+    }
+    const list = (data ?? []) as CustomerLite[];
+    setCustomers(list);
+    return list;
   };
+
 
   const saveToNotesAndDelete = async () => {
     if (!pendingDelete || !selectedCustomer) return;
