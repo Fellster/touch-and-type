@@ -508,6 +508,10 @@ export default function Index() {
           <Plus className="h-4 w-4 mr-1" />
           Add customer
         </Button>
+        <Button variant="outline" className="flex-1 h-11" onClick={() => nav("/designers")}>
+          <Search className="h-4 w-4 mr-1" />
+          Search designer
+        </Button>
         <Button variant="outline" className="flex-1 h-11" onClick={() => nav("/customers")}>
           <NotebookPen className="h-4 w-4 mr-1" />
           Search customers
