@@ -61,6 +61,7 @@ export default function Designers() {
       <SEO
         title="Designers — Noted"
         description="Browse every designer your customers are interested in."
+        path="/designers"
       />
       <header className="px-5 pt-6 max-w-2xl mx-auto flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => nav("/")} aria-label="Back">
