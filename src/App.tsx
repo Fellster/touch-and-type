@@ -10,6 +10,7 @@ import Auth from "./pages/Auth.tsx";
 import Preview from "./pages/Preview.tsx";
 import CustomerDetail from "./pages/CustomerDetail.tsx";
 import Customers from "./pages/Customers.tsx";
+import Designers from "./pages/Designers.tsx";
 import ManageFields from "./pages/ManageFields.tsx";
 import OAuthConsent from "./pages/OAuthConsent.tsx";
 import NotFound from "./pages/NotFound.tsx";
