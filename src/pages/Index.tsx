@@ -518,7 +518,7 @@ export default function Index() {
           onClick={() => nav("/designers")}
         >
           <Search className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
-          Search designer
+          Designer
         </Button>
         <Button
           variant="outline"
@@ -526,7 +526,7 @@ export default function Index() {
           onClick={() => nav("/customers")}
         >
           <NotebookPen className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
-          Search customers
+          Customers
         </Button>
       </section>
 
