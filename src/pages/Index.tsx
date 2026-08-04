@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, LogOut, NotebookPen, GripVertical, Pencil } from "lucide-react";
+import { Plus, Trash2, LogOut, NotebookPen, GripVertical, Pencil, Search } from "lucide-react";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
 import {
@@ -507,6 +507,10 @@ export default function Index() {
         <Button variant="outline" className="flex-1 h-11" onClick={() => nav("/customers?add=1")}>
           <Plus className="h-4 w-4 mr-1" />
           Add customer
+        </Button>
+        <Button variant="outline" className="flex-1 h-11" onClick={() => nav("/designers")}>
+          <Search className="h-4 w-4 mr-1" />
+          Search designer
         </Button>
         <Button variant="outline" className="flex-1 h-11" onClick={() => nav("/customers")}>
           <NotebookPen className="h-4 w-4 mr-1" />
