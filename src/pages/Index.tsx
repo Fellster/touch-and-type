@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, LogOut, NotebookPen, GripVertical, Pencil, Search } from "lucide-react";
+import { Plus, Trash2, LogOut, NotebookPen, GripVertical, Pencil, Search, Settings } from "lucide-react";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
 import {
@@ -460,6 +460,9 @@ export default function Index() {
             title="Customer notebook (legacy)"
           >
             <NotebookPen className="h-5 w-5" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => nav("/settings")} aria-label="Settings" title="Settings">
+            <Settings className="h-5 w-5" />
           </Button>
           <Button variant="ghost" size="icon" onClick={signOut} aria-label="Sign out">
             <LogOut className="h-5 w-5" />

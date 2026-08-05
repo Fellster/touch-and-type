@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Search, Tag } from "lucide-react";
 import SEO from "@/components/SEO";
+import { useLabels } from "@/hooks/useSettings";
 
 type Customer = {
   id: string;
@@ -17,6 +18,7 @@ type Customer = {
 };
 
 export default function Designers() {
+  const labels = useLabels();
   const { user } = useAuth();
   const nav = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -67,7 +69,7 @@ export default function Designers() {
         <Button variant="ghost" size="icon" onClick={() => nav("/")} aria-label="Back">
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="font-serif text-2xl">Designers</h1>
+        <h1 className="font-serif text-2xl">{labels.designers}</h1>
       </header>
 
       <section className="px-5 max-w-2xl mx-auto mt-4">
