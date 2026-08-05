@@ -18,6 +18,7 @@ type Customer = {
 };
 
 export default function Designers() {
+  const labels = useLabels();
   const { user } = useAuth();
   const nav = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);

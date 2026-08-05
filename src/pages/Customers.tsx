@@ -51,6 +51,7 @@ function CustomerRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(c.name);
+  const labels = useLabels();
   const commit = () => {
     setEditing(false);
     const v = draft.trim();
@@ -116,6 +117,7 @@ function CustomerRow({
 }
 
 function CustomersInner() {
+  const labels = useLabels();
   const { user } = useAuth();
   const nav = useNavigate();
   const [sp] = useSearchParams();

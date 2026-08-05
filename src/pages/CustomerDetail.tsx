@@ -34,6 +34,7 @@ type Drawing = { id: string; storage_path: string; ocr_text: string | null; url?
 type Photo = { id: string; storage_path: string; url?: string };
 
 export default function CustomerDetail() {
+  const labels = useLabels();
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const nav = useNavigate();
