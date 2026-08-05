@@ -27,18 +27,21 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/preview" element={<Preview />} />
-            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-            <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
-            <Route path="/designers" element={<ProtectedRoute><Designers /></ProtectedRoute>} />
-            <Route path="/c/:id" element={<ProtectedRoute><CustomerDetail /></ProtectedRoute>} />
-            <Route path="/fields" element={<ProtectedRoute><ManageFields /></ProtectedRoute>} />
-            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <FloatingMic />
+          <SettingsProvider>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/preview" element={<Preview />} />
+              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
+              <Route path="/designers" element={<ProtectedRoute><Designers /></ProtectedRoute>} />
+              <Route path="/c/:id" element={<ProtectedRoute><CustomerDetail /></ProtectedRoute>} />
+              <Route path="/fields" element={<ProtectedRoute><ManageFields /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+              <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <FloatingMic />
+          </SettingsProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
