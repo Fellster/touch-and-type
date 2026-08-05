@@ -13,8 +13,10 @@ import Customers from "./pages/Customers.tsx";
 import Designers from "./pages/Designers.tsx";
 import ManageFields from "./pages/ManageFields.tsx";
 import OAuthConsent from "./pages/OAuthConsent.tsx";
+import SettingsPage from "./pages/Settings.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import FloatingMic from "@/components/FloatingMic";
+import { SettingsProvider } from "@/hooks/useSettings";
 
 const queryClient = new QueryClient();
 
