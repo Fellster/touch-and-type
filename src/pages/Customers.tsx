@@ -15,6 +15,7 @@ import {
 import { ArrowLeft, ArrowUpDown, Pencil, Plus, Search, User } from "lucide-react";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
+import { useLabels } from "@/hooks/useSettings";
 import VoiceCapture, { type ParsedResult } from "@/components/VoiceCapture";
 
 type SortOption =
@@ -90,7 +91,7 @@ function CustomerRow({
         <div className="text-xs text-muted-foreground truncate">
           {[
             c.designers?.length ? c.designers.join(" · ") : null,
-            c.looking_for?.length ? `Looking for: ${c.looking_for.join(" · ")}` : null,
+            c.looking_for?.length ? `${labels.looking_for}: ${c.looking_for.join(" · ")}` : null,
             c.shoe_size ? `Size ${c.shoe_size}` : null,
             c.phone || c.email || "—",
           ]
@@ -274,10 +275,10 @@ function CustomersInner() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="updated_desc">Recently updated</SelectItem>
-              <SelectItem value="designer_asc">Designer A–Z</SelectItem>
-              <SelectItem value="designer_desc">Designer Z–A</SelectItem>
-              <SelectItem value="shoe_size_asc">Shoe size small → large</SelectItem>
-              <SelectItem value="shoe_size_desc">Shoe size large → small</SelectItem>
+              <SelectItem value="designer_asc">{labels.designers} A–Z</SelectItem>
+              <SelectItem value="designer_desc">{labels.designers} Z–A</SelectItem>
+              <SelectItem value="shoe_size_asc">{labels.shoe_size} small → large</SelectItem>
+              <SelectItem value="shoe_size_desc">{labels.shoe_size} large → small</SelectItem>
             </SelectContent>
           </Select>
         </div>

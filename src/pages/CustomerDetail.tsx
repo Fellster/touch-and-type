@@ -12,6 +12,7 @@ import { ArrowLeft, Trash2, Plus, X, Camera, Pencil, Sparkles, Copy, Mail, Phone
 import { toast } from "sonner";
 import DrawingCanvas from "@/components/DrawingCanvas";
 import SEO from "@/components/SEO";
+import { useLabels } from "@/hooks/useSettings";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import VoiceCapture, { type ParsedResult } from "@/components/VoiceCapture";
 
@@ -330,7 +331,7 @@ export default function CustomerDetail() {
             </div>
           </div>
           <div>
-            <Label htmlFor="cust-shoesize">Shoe size</Label>
+            <Label htmlFor="cust-shoesize">{labels.shoe_size}</Label>
             <Input
               id="cust-shoesize"
               type="number" step="0.5" min="3" max="14"
@@ -339,7 +340,7 @@ export default function CustomerDetail() {
             />
           </div>
           <div>
-            <Label htmlFor="cust-width">Width</Label>
+            <Label htmlFor="cust-width">{labels.width}</Label>
             <select
               id="cust-width"
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
@@ -354,8 +355,8 @@ export default function CustomerDetail() {
           </div>
         </div>
 
-        <TagEditor label="Designers" values={customer.designers} onChange={(v) => update({ designers: v })} />
-        <TagEditor label="Looking for" values={customer.looking_for} onChange={(v) => update({ looking_for: v })} />
+        <TagEditor label={labels.designers} values={customer.designers} onChange={(v) => update({ designers: v })} />
+        <TagEditor label={labels.looking_for} values={customer.looking_for} onChange={(v) => update({ looking_for: v })} />
 
         {fields.length > 0 && (
           <div className="pt-2 border-t space-y-3">
