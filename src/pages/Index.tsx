@@ -69,17 +69,20 @@ const formatDue = (iso: string | null) => {
 
 function SortableTodo({
   t,
+  customers,
   onToggle,
   onUpdateDue,
   onUpdateTitle,
   onRemove,
 }: {
   t: Todo;
+  customers: { id: string; name: string }[];
   onToggle: (t: Todo) => void;
   onUpdateDue: (t: Todo, v: string) => void;
   onUpdateTitle: (t: Todo, v: string) => void;
   onRemove: (id: string) => void;
 }) {
+  const nav = useNavigate();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: t.id });
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(t.title);
@@ -139,7 +142,30 @@ function SortableTodo({
           <p
             className={`whitespace-pre-wrap break-words line-clamp-3 ${t.done ? "line-through text-muted-foreground" : ""}`}
           >
-            {t.title}
+            {t.title.split("\n").map((line, i) => {
+              const match = customers.find(
+                (c) => c.name.trim().toLowerCase() === line.trim().toLowerCase(),
+              );
+              return (
+                <span key={i}>
+                  {i > 0 && "\n"}
+                  {match ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        nav(`/c/${match.id}`);
+                      }}
+                      className="text-left underline underline-offset-2 hover:text-primary"
+                    >
+                      {line}
+                    </button>
+                  ) : (
+                    line
+                  )}
+                </span>
+              );
+            })}
           </p>
         )}
         <div className="mt-1 flex items-center gap-2">
@@ -204,6 +230,7 @@ export default function Index() {
 
   useEffect(() => {
     load();
+    loadCustomers();
   }, []);
 
   const add = async (e: React.FormEvent) => {
@@ -419,7 +446,7 @@ export default function Index() {
     const list = (
       <div className="space-y-2">
         {items.map((t) => (
-          <SortableTodo key={t.id} t={t} onToggle={toggle} onUpdateDue={updateDue} onUpdateTitle={updateTitle} onRemove={requestRemove} />
+          <SortableTodo key={t.id} t={t} customers={customers} onToggle={toggle} onUpdateDue={updateDue} onUpdateTitle={updateTitle} onRemove={requestRemove} />
         ))}
       </div>
     );
