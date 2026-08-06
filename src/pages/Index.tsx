@@ -69,17 +69,20 @@ const formatDue = (iso: string | null) => {
 
 function SortableTodo({
   t,
+  customers,
   onToggle,
   onUpdateDue,
   onUpdateTitle,
   onRemove,
 }: {
   t: Todo;
+  customers: { id: string; name: string }[];
   onToggle: (t: Todo) => void;
   onUpdateDue: (t: Todo, v: string) => void;
   onUpdateTitle: (t: Todo, v: string) => void;
   onRemove: (id: string) => void;
 }) {
+  const nav = useNavigate();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: t.id });
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(t.title);
@@ -204,6 +207,7 @@ export default function Index() {
 
   useEffect(() => {
     load();
+    loadCustomers();
   }, []);
 
   const add = async (e: React.FormEvent) => {
