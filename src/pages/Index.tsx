@@ -488,6 +488,9 @@ export default function Index() {
           >
             <NotebookPen className="h-5 w-5" />
           </Button>
+          <Button variant="ghost" size="icon" onClick={() => nav("/preview")} aria-label="Preview demo" title="Preview demo">
+            <Eye className="h-5 w-5" />
+          </Button>
           <Button variant="ghost" size="icon" onClick={() => nav("/settings")} aria-label="Settings" title="Settings">
             <Settings className="h-5 w-5" />
           </Button>
