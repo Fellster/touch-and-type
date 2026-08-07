@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, LogOut, NotebookPen, GripVertical, Pencil, Search, Settings } from "lucide-react";
+import { Plus, Trash2, LogOut, NotebookPen, GripVertical, Pencil, Search, Settings, Eye } from "lucide-react";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
 import {
