@@ -115,16 +115,16 @@ export default function Preview() {
   return (
     <main className="min-h-screen pb-24">
       <SEO
-        title="Atelier — Preview the Customer Notebook for Boutiques"
-        description="See how Atelier tracks women's footwear clients: designers, sizes, wishlists, drawings, and searchable notes. Public preview with sample data."
+        title="Noted — Preview the Customer Notebook for Boutiques"
+        description="See how Noted tracks women's footwear clients: designers, sizes, wishlists, drawings, and searchable notes. Public preview with sample data."
         path="/preview"
       />
 
       <header className="px-5 pt-10 pb-6 max-w-3xl mx-auto text-center">
-        <img src="/favicon.png" alt="Atelier logo" className="h-24 w-24 object-contain mx-auto mb-4" />
+        <img src="/favicon.png" alt="Noted logo" className="h-24 w-24 object-contain mx-auto mb-4" />
         <h1 className="font-serif text-4xl mb-3">A private notebook for footwear boutiques</h1>
         <p className="text-muted-foreground max-w-xl mx-auto">
-          Atelier helps sales associates remember every client: preferred designers, exact sizes, wishlists, sketches
+          Noted helps sales associates remember every client: preferred designers, exact sizes, wishlists, sketches
           from the fitting room, and handwritten notes — all searchable in seconds.
         </p>
         <div className="flex gap-2 justify-center mt-5">
@@ -210,7 +210,7 @@ export default function Preview() {
       <section className="px-5 max-w-3xl mx-auto mt-12 text-center">
         <h2 className="font-serif text-2xl mb-2">Ready to keep your own notebook?</h2>
         <p className="text-muted-foreground mb-4">Your data stays private to your account — no client information is ever shared.</p>
-        <Button asChild size="lg"><Link to="/auth">Get started</Link></Button>
+        <Button asChild size="lg"><Link to="/auth">Get started with Noted</Link></Button>
       </section>
     </main>
   );

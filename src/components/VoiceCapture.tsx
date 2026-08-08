@@ -14,6 +14,7 @@ import {
 import { Mic, Square, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useLabels } from "@/hooks/useSettings";
 
 export type VoiceContext = "todo" | "customer" | "notes" | "global";
 
@@ -68,6 +69,7 @@ export default function VoiceCapture({
   const [processing, setProcessing] = useState(false);
   const [open, setOpen] = useState(false);
   const [result, setResult] = useState<ParsedResult | null>(null);
+  const labels = useLabels();
 
   const recRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -334,7 +336,7 @@ function ReviewDialog({
                   }
                 />
               </Field>
-              <Field label="Looking for (comma-separated)" full>
+              <Field label={`${labels.looking_for} (comma-separated)`} full>
                 <Input
                   value={(draft.customer?.looking_for ?? []).join(", ")}
                   onChange={(e) =>
