@@ -230,7 +230,7 @@ export const DEFAULT_LABELS: Record<FieldKey, string> = {
   designers: "Designers",
   shoe_size: "Shoe size",
   width: "Width",
-  looking_for: "Looking for",
+  looking_for: "Wants",
 };
 
 type Settings = { theme: ThemeKey; accent: AccentSetting; labels: Record<FieldKey, string> };
