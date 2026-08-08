@@ -69,7 +69,7 @@ export default function VoiceCapture({
   const [processing, setProcessing] = useState(false);
   const [open, setOpen] = useState(false);
   const [result, setResult] = useState<ParsedResult | null>(null);
-  const fieldLabels = useLabels();
+  
 
   const recRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -336,7 +336,7 @@ function ReviewDialog({
                   }
                 />
               </Field>
-              <Field label={`${fieldLabels.looking_for} (comma-separated)`} full>
+              <Field label={`${useLabels().looking_for} (comma-separated)`} full>
                 <Input
                   value={(draft.customer?.looking_for ?? []).join(", ")}
                   onChange={(e) =>
