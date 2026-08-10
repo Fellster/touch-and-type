@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, LogOut, RotateCcw } from "lucide-react";
+import { ArrowLeft, Check, LogOut, RotateCcw, Share2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +27,31 @@ export default function Settings() {
   const handleSignOut = async () => {
     await signOut();
     nav("/auth");
+  };
+
+  const handleShare = async () => {
+    const shareData = {
+      title: "Noted",
+      text: "Try Noted for keeping track of customers.",
+      url: "https://touch-and-type.lovable.app",
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") {
+          toast.error("Could not open share sheet.");
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareData.url);
+        toast.success("Link copied to clipboard");
+      } catch {
+        toast.error("Could not copy link.");
+      }
+    }
   };
 
   return (
@@ -154,6 +180,15 @@ export default function Settings() {
           </button>{" "}
           page.
         </p>
+      </section>
+
+      <section className="px-5 max-w-2xl mx-auto mt-10">
+        <h2 className="font-serif text-xl mb-1">Share Noted</h2>
+        <p className="text-sm text-muted-foreground mb-3">Send a copy of Noted to someone else.</p>
+        <Button variant="outline" className="w-full" onClick={handleShare}>
+          <Share2 className="h-4 w-4 mr-2" />
+          Send a link
+        </Button>
       </section>
 
       <section className="px-5 max-w-2xl mx-auto mt-10">
