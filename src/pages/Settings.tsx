@@ -155,6 +155,15 @@ export default function Settings() {
           page.
         </p>
       </section>
+
+      <section className="px-5 max-w-2xl mx-auto mt-10">
+        <h2 className="font-serif text-xl mb-1">Account</h2>
+        <p className="text-sm text-muted-foreground mb-3">Sign out of Noted on this device.</p>
+        <Button variant="outline" className="w-full" onClick={handleSignOut}>
+          <LogOut className="h-4 w-4 mr-2" />
+          Log out
+        </Button>
+      </section>
     </main>
   );
 }
