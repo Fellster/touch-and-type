@@ -1,10 +1,11 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, RotateCcw } from "lucide-react";
+import { ArrowLeft, Check, LogOut, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import SEO from "@/components/SEO";
+import { useAuth } from "@/hooks/useAuth";
 import {
   ACCENTS,
   DEFAULT_LABELS,
@@ -19,7 +20,13 @@ const FIELD_KEYS = Object.keys(DEFAULT_LABELS) as FieldKey[];
 
 export default function Settings() {
   const nav = useNavigate();
+  const { signOut } = useAuth();
   const { theme, accent, labels, setTheme, setAccent, setLabel, resetLabels } = useSettings();
+
+  const handleSignOut = async () => {
+    await signOut();
+    nav("/auth");
+  };
 
   return (
     <main className="min-h-screen bg-background pb-24">
@@ -147,6 +154,15 @@ export default function Settings() {
           </button>{" "}
           page.
         </p>
+      </section>
+
+      <section className="px-5 max-w-2xl mx-auto mt-10">
+        <h2 className="font-serif text-xl mb-1">Account</h2>
+        <p className="text-sm text-muted-foreground mb-3">Sign out of Noted on this device.</p>
+        <Button variant="outline" className="w-full" onClick={handleSignOut}>
+          <LogOut className="h-4 w-4 mr-2" />
+          Log out
+        </Button>
       </section>
     </main>
   );
