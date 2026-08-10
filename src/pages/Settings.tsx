@@ -20,7 +20,13 @@ const FIELD_KEYS = Object.keys(DEFAULT_LABELS) as FieldKey[];
 
 export default function Settings() {
   const nav = useNavigate();
+  const { signOut } = useAuth();
   const { theme, accent, labels, setTheme, setAccent, setLabel, resetLabels } = useSettings();
+
+  const handleSignOut = async () => {
+    await signOut();
+    nav("/auth");
+  };
 
   return (
     <main className="min-h-screen bg-background pb-24">
