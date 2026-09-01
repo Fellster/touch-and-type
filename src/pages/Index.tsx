@@ -206,6 +206,7 @@ export default function Index() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
+  const [todoPrompt] = useState(getSessionTodoPrompt);
   const [due, setDue] = useState("");
   const [pendingDelete, setPendingDelete] = useState<Todo | null>(null);
   const [customers, setCustomers] = useState<CustomerLite[]>([]);
