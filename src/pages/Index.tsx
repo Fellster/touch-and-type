@@ -27,6 +27,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import VoiceCapture, { type ParsedResult } from "@/components/VoiceCapture";
+import { getSessionTodoPrompt } from "@/lib/todoPrompts";
 import {
   Dialog,
   DialogContent,
