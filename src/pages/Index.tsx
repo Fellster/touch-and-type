@@ -509,7 +509,7 @@ export default function Index() {
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="What do you need to do?"
+            placeholder={todoPrompt}
             className="h-11"
             aria-label="New task"
           />
