@@ -27,6 +27,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import VoiceCapture, { type ParsedResult } from "@/components/VoiceCapture";
+import { getSessionTodoPrompt } from "@/lib/todoPrompts";
 import {
   Dialog,
   DialogContent,
@@ -205,6 +206,7 @@ export default function Index() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
+  const [todoPrompt] = useState(getSessionTodoPrompt);
   const [due, setDue] = useState("");
   const [pendingDelete, setPendingDelete] = useState<Todo | null>(null);
   const [customers, setCustomers] = useState<CustomerLite[]>([]);
@@ -509,7 +511,7 @@ export default function Index() {
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="What do you need to do?"
+            placeholder={todoPrompt}
             className="h-11"
             aria-label="New task"
           />
