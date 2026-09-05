@@ -18,6 +18,7 @@ import VoiceCapture, { type ParsedResult } from "@/components/VoiceCapture";
 
 type Customer = {
   id: string;
+  user_id: string;
   name: string;
   phone: string | null;
   email: string | null;
@@ -30,6 +31,7 @@ type Customer = {
 };
 
 type CustomField = { id: string; key: string; label: string; field_type: string; sort_order: number };
+type Share = { id: string; recipient_user_id: string; permission: "view" | "edit"; email: string };
 type Drawing = { id: string; storage_path: string; ocr_text: string | null; url?: string };
 type Photo = { id: string; storage_path: string; url?: string };
 
@@ -47,6 +49,13 @@ export default function CustomerDetail() {
   const fileInput = useRef<HTMLInputElement>(null);
   const saveTimer = useRef<number | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const [access, setAccess] = useState<"owner" | "edit" | "view">("owner");
+  const canEdit = access !== "view";
+  const isOwner = access === "owner";
+  const [shares, setShares] = useState<Share[]>([]);
+  const [shareEmail, setShareEmail] = useState("");
+  const [sharePerm, setSharePerm] = useState<"view" | "edit">("view");
+  const [shareBusy, setShareBusy] = useState(false);
   const [todoOpen, setTodoOpen] = useState(false);
   const [todoText, setTodoText] = useState("");
   const [todoDue, setTodoDue] = useState("");
@@ -117,6 +126,30 @@ export default function CustomerDetail() {
     }
   };
 
+  const callShare = async (payload: Record<string, unknown>) => {
+    if (!id) return;
+    setShareBusy(true);
+    const res = await supabase.functions.invoke("manage-share", { body: { customer_id: id, ...payload } });
+    setShareBusy(false);
+    const err = (res.data as any)?.error ?? (res.error ? "Something went wrong" : null);
+    if (err) {
+      toast.error(String(err));
+      return;
+    }
+    setShares(((res.data as any)?.shares ?? []) as Share[]);
+    return true;
+  };
+
+  const addShare = async () => {
+    if (!shareEmail.trim()) return toast.error("Enter an email address");
+    const ok = await callShare({ action: "add", email: shareEmail, permission: sharePerm });
+    if (ok) {
+      setShareEmail("");
+      setSharePerm("view");
+      toast.success("Customer shared");
+    }
+  };
+
   const load = async () => {
     if (!id) return;
     const [c, f, d, p] = await Promise.all([
@@ -126,7 +159,21 @@ export default function CustomerDetail() {
       supabase.from("photos").select("*").eq("customer_id", id).order("created_at", { ascending: false }),
     ]);
     if (c.error) { toast.error(c.error.message); return; }
-    setCustomer(c.data as Customer);
+    const cust = c.data as Customer;
+    setCustomer(cust);
+    if (user && cust.user_id === user.id) {
+      setAccess("owner");
+      const res = await supabase.functions.invoke("manage-share", { body: { customer_id: id, action: "list" } });
+      setShares(((res.data as any)?.shares ?? []) as Share[]);
+    } else if (user) {
+      const { data: sh } = await supabase
+        .from("customer_shares")
+        .select("permission")
+        .eq("customer_id", id)
+        .eq("recipient_user_id", user.id)
+        .maybeSingle();
+      setAccess(sh?.permission === "edit" ? "edit" : "view");
+    }
     setFields((f.data ?? []) as CustomField[]);
 
     const ds = (d.data ?? []) as Drawing[];
@@ -143,7 +190,7 @@ export default function CustomerDetail() {
     setPhotos(ps);
   };
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { load(); }, [id, user?.id]);
 
   useEffect(() => {
     if (customer && searchParams.get("new") === "1" && customer.name === "New customer") {
@@ -155,11 +202,12 @@ export default function CustomerDetail() {
 
   const update = (patch: Partial<Customer>) => {
     if (!customer) return;
+    if (!canEdit) { toast.error("You have view-only access to this customer"); return; }
     const next = { ...customer, ...patch };
     setCustomer(next);
     if (saveTimer.current) window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(async () => {
-      const { id: _id, ...rest } = next;
+      const { id: _id, user_id: _uid, ...rest } = next;
       const { error } = await supabase.from("customers").update(rest).eq("id", customer.id);
       if (error) toast.error(error.message);
     }, 500);
@@ -171,9 +219,12 @@ export default function CustomerDetail() {
   };
 
   const removeCustomer = async () => {
-    if (!customer || !confirm("Delete this customer and all their notes?")) return;
-    const { error } = await supabase.from("customers").delete().eq("id", customer.id);
-    if (error) return toast.error(error.message);
+    if (!customer || !isOwner) return;
+    if (!confirm("Delete this customer and all their notes, photos and drawings?")) return;
+    const res = await supabase.functions.invoke("delete-customer", { body: { customer_id: customer.id } });
+    const err = (res.data as any)?.error ?? (res.error ? "Delete failed" : null);
+    if (err) return toast.error(String(err));
+    toast.success("Customer deleted");
     nav("/");
   };
 
