@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Trash2, Plus, X, Camera, Pencil, Sparkles, Copy, Mail, Phone, ListTodo } from "lucide-react";
+import { ArrowLeft, Trash2, Plus, X, Camera, Pencil, Sparkles, Copy, Mail, Phone, ListTodo, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import DrawingCanvas from "@/components/DrawingCanvas";
 import SEO from "@/components/SEO";
@@ -313,9 +313,13 @@ export default function CustomerDetail() {
       <div className="flex justify-between items-start mb-4">
         <Button variant="ghost" size="sm" onClick={() => nav("/")}><ArrowLeft className="h-4 w-4 mr-1" />Back</Button>
         <div className="flex flex-col gap-2 items-end">
-          <Button variant="ghost" size="sm" onClick={removeCustomer} aria-label="Delete this customer"><Trash2 className="h-4 w-4" /></Button>
+          {isOwner && (
+            <Button variant="ghost" size="sm" onClick={removeCustomer} aria-label="Delete this customer"><Trash2 className="h-4 w-4" /></Button>
+          )}
           <Button variant="ghost" size="sm" onClick={openTodo} aria-label="Add to-do for this customer"><ListTodo className="h-4 w-4" /></Button>
-          <VoiceCapture context="customer" onCommit={applyVoice} variant="ghost" size="sm" title="Voice fill fields / append note" />
+          {canEdit && (
+            <VoiceCapture context="customer" onCommit={applyVoice} variant="ghost" size="sm" title="Voice fill fields / append note" />
+          )}
         </div>
       </div>
 
@@ -353,6 +357,12 @@ export default function CustomerDetail() {
       </Dialog>
 
 
+      {!isOwner && (
+        <div className="mb-3 text-sm rounded-md border px-3 py-2 bg-muted/40">
+          Shared with you — {canEdit ? "you can edit this customer." : "view only, you cannot make changes."}
+        </div>
+      )}
+
       <h1 className="sr-only">{customer.name || "Untitled customer"}</h1>
       <label htmlFor="customer-name" className="sr-only">Customer name</label>
       <Input
@@ -361,6 +371,7 @@ export default function CustomerDetail() {
         value={customer.name}
         onChange={(e) => update({ name: e.target.value })}
         aria-label="Customer name"
+        readOnly={!canEdit}
         className="text-3xl md:text-4xl font-serif h-auto py-2 border-0 shadow-none focus-visible:ring-0 px-0 bg-transparent"
         placeholder="Customer name"
       />
@@ -370,7 +381,7 @@ export default function CustomerDetail() {
           <div>
             <Label htmlFor="cust-phone">Phone</Label>
             <div className="flex gap-2">
-              <Input id="cust-phone" className="flex-1" value={customer.phone ?? ""} onChange={(e) => update({ phone: e.target.value })} />
+              <Input id="cust-phone" readOnly={!canEdit} className="flex-1" value={customer.phone ?? ""} onChange={(e) => update({ phone: e.target.value })} />
               <Button variant="outline" size="icon" aria-label="Copy phone number" disabled={!customer.phone} onClick={async () => { if (customer.phone) { await navigator.clipboard.writeText(customer.phone); toast.success("Phone copied"); } }}><Copy className="h-4 w-4" /></Button>
               <Button variant="outline" size="icon" aria-label="Call phone number" disabled={!customer.phone} onClick={() => { if (customer.phone) { window.location.href = `tel:${customer.phone.replace(/[^\d+]/g, "")}`; } }}><Phone className="h-4 w-4" /></Button>
             </div>
@@ -378,7 +389,7 @@ export default function CustomerDetail() {
           <div>
             <Label htmlFor="cust-email">Email</Label>
             <div className="flex gap-2">
-              <Input id="cust-email" className="flex-1" type="email" value={customer.email ?? ""} onChange={(e) => update({ email: e.target.value })} />
+              <Input id="cust-email" readOnly={!canEdit} className="flex-1" type="email" value={customer.email ?? ""} onChange={(e) => update({ email: e.target.value })} />
               <Button variant="outline" size="icon" asChild aria-label="Send email" disabled={!customer.email}><a href={customer.email ? `mailto:${customer.email}` : undefined}><Mail className="h-4 w-4" /></a></Button>
             </div>
           </div>
@@ -386,6 +397,7 @@ export default function CustomerDetail() {
             <Label htmlFor="cust-shoesize">{labels.shoe_size}</Label>
             <Input
               id="cust-shoesize"
+              readOnly={!canEdit}
               type="number" step="0.5" min="3" max="14"
               value={customer.shoe_size ?? ""}
               onChange={(e) => update({ shoe_size: e.target.value === "" ? null : Number(e.target.value) })}
@@ -395,6 +407,7 @@ export default function CustomerDetail() {
             <Label htmlFor="cust-width">{labels.width}</Label>
             <select
               id="cust-width"
+              disabled={!canEdit}
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={customer.width ?? ""}
               onChange={(e) => update({ width: e.target.value || null })}
@@ -407,8 +420,8 @@ export default function CustomerDetail() {
           </div>
         </div>
 
-        <TagEditor label={labels.designers} values={customer.designers} onChange={(v) => update({ designers: v })} />
-        <TagEditor label={labels.looking_for} values={customer.looking_for} onChange={(v) => update({ looking_for: v })} />
+        <TagEditor label={labels.designers} values={customer.designers} readOnly={!canEdit} onChange={(v) => update({ designers: v })} />
+        <TagEditor label={labels.looking_for} values={customer.looking_for} readOnly={!canEdit} onChange={(v) => update({ looking_for: v })} />
 
         {fields.length > 0 && (
           <div className="pt-2 border-t space-y-3">
@@ -424,18 +437,90 @@ export default function CustomerDetail() {
         )}
       </Card>
 
+      {isOwner && (
+        <section className="mt-6">
+          <h2 className="font-serif text-2xl mb-2">Share</h2>
+          <Card className="p-4 space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Share just this customer with another Noted user. They will not see any of your other customers.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex-1">
+                <Label htmlFor="share-email" className="sr-only">Email address</Label>
+                <Input
+                  id="share-email"
+                  type="email"
+                  value={shareEmail}
+                  onChange={(e) => setShareEmail(e.target.value)}
+                  placeholder="their@email.com"
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addShare(); } }}
+                />
+              </div>
+              <div>
+                <Label htmlFor="share-perm" className="sr-only">Permission</Label>
+                <select
+                  id="share-perm"
+                  className="flex h-10 w-full sm:w-32 rounded-md border border-input bg-background px-3 text-sm"
+                  value={sharePerm}
+                  onChange={(e) => setSharePerm(e.target.value as "view" | "edit")}
+                >
+                  <option value="view">View</option>
+                  <option value="edit">Edit</option>
+                </select>
+              </div>
+              <Button onClick={addShare} disabled={shareBusy}>
+                <Share2 className="h-4 w-4 mr-1" />Share
+              </Button>
+            </div>
+
+            {shares.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Not shared with anyone yet.</p>
+            ) : (
+              <ul className="space-y-2">
+                {shares.map((s) => (
+                  <li key={s.id} className="flex items-center gap-2 border rounded-md p-2">
+                    <span className="flex-1 truncate text-sm">{s.email}</span>
+                    <label className="sr-only" htmlFor={`perm-${s.id}`}>Permission for {s.email}</label>
+                    <select
+                      id={`perm-${s.id}`}
+                      className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                      value={s.permission}
+                      disabled={shareBusy}
+                      onChange={(e) => callShare({ action: "update", share_id: s.id, permission: e.target.value })}
+                    >
+                      <option value="view">View</option>
+                      <option value="edit">Edit</option>
+                    </select>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={shareBusy}
+                      aria-label={`Revoke access for ${s.email}`}
+                      onClick={() => callShare({ action: "revoke", share_id: s.id })}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </section>
+      )}
+
       <section className="mt-6">
         <div className="flex items-center justify-between mb-2">
           <h2 className="font-serif text-2xl">
             <label htmlFor="cust-notes">Notes</label>
           </h2>
-          <VoiceCapture context="notes" onCommit={applyVoice} variant="outline" size="sm" title="Dictate note" />
+          {canEdit && <VoiceCapture context="notes" onCommit={applyVoice} variant="outline" size="sm" title="Dictate note" />}
         </div>
         <Textarea
           id="cust-notes"
           value={customer.typed_notes ?? ""}
           onChange={(e) => update({ typed_notes: e.target.value })}
-          placeholder="Type any notes here…"
+          readOnly={!canEdit}
+          placeholder={canEdit ? "Type any notes here…" : "View only"}
           rows={6}
         />
       </section>
@@ -443,7 +528,7 @@ export default function CustomerDetail() {
       <section className="mt-6">
         <div className="flex justify-between items-center mb-2">
           <h2 className="font-serif text-2xl">Drawings</h2>
-          {!showCanvas && (
+          {!showCanvas && canEdit && (
             <Button size="sm" onClick={() => setShowCanvas(true)} aria-label="Add new drawing">
               <Pencil className="h-4 w-4 mr-1" />New
             </Button>
@@ -475,9 +560,11 @@ export default function CustomerDetail() {
                   <Sparkles className="h-4 w-4 mr-1" />Transcribe handwriting
                 </Button>
               )}
-              <Button size="sm" variant="ghost" className="w-full" onClick={() => removeDrawing(d)} aria-label="Delete drawing">
-                <Trash2 className="h-4 w-4 mr-1" />Delete
-              </Button>
+              {canEdit && (
+                <Button size="sm" variant="ghost" className="w-full" onClick={() => removeDrawing(d)} aria-label="Delete drawing">
+                  <Trash2 className="h-4 w-4 mr-1" />Delete
+                </Button>
+              )}
             </Card>
           ))}
         </div>
@@ -486,22 +573,24 @@ export default function CustomerDetail() {
       <section className="mt-6">
         <div className="flex justify-between items-center mb-2">
           <h2 className="font-serif text-2xl">Photos</h2>
-          <Button size="sm" onClick={() => fileInput.current?.click()} aria-label="Add photo">
-            <Camera className="h-4 w-4 mr-1" />Add
-          </Button>
+          {canEdit && (
+            <Button size="sm" onClick={() => fileInput.current?.click()} aria-label="Add photo">
+              <Camera className="h-4 w-4 mr-1" />Add
+            </Button>
+          )}
           <input ref={fileInput} type="file" accept="image/*" capture="environment" hidden onChange={onPhoto} aria-label="Upload photo" />
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {photos.map((p) => (
             <div key={p.id} className="relative group">
               {p.url && <img src={p.url} alt={`Photo for ${customer.name || "customer"}`} className="w-full aspect-square object-cover rounded-md" />}
-              <button
+              {canEdit && <button
                 onClick={() => removePhoto(p)}
                 className="absolute top-1 right-1 bg-background/80 rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
                 aria-label="Delete photo"
               >
                 <X className="h-4 w-4" />
-              </button>
+              </button>}
             </div>
           ))}
         </div>
@@ -510,7 +599,7 @@ export default function CustomerDetail() {
   );
 }
 
-function TagEditor({ label, values, onChange }: { label: string; values: string[]; onChange: (v: string[]) => void }) {
+function TagEditor({ label, values, onChange, readOnly }: { label: string; values: string[]; onChange: (v: string[]) => void; readOnly?: boolean }) {
   const [input, setInput] = useState("");
   const inputId = useId();
   const add = () => {
@@ -526,12 +615,15 @@ function TagEditor({ label, values, onChange }: { label: string; values: string[
         {values.map((v, i) => (
           <Badge key={i} variant="secondary" className="gap-1">
             {v}
-            <button onClick={() => onChange(values.filter((_, j) => j !== i))} aria-label={`Remove ${v}`}>
-              <X className="h-3 w-3" />
-            </button>
+            {!readOnly && (
+              <button onClick={() => onChange(values.filter((_, j) => j !== i))} aria-label={`Remove ${v}`}>
+                <X className="h-3 w-3" />
+              </button>
+            )}
           </Badge>
         ))}
       </div>
+      {readOnly ? null : (
       <div className="flex gap-2">
         <Input
           id={inputId}
@@ -542,6 +634,7 @@ function TagEditor({ label, values, onChange }: { label: string; values: string[
         />
         <Button type="button" variant="outline" onClick={add} aria-label={`Add ${label.toLowerCase()}`}><Plus className="h-4 w-4" /></Button>
       </div>
+      )}
     </div>
   );
 }
