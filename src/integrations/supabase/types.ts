@@ -44,6 +44,44 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_shares: {
+        Row: {
+          created_at: string
+          customer_id: string
+          granted_by: string
+          id: string
+          permission: string
+          recipient_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          granted_by: string
+          id?: string
+          permission?: string
+          recipient_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          granted_by?: string
+          id?: string
+          permission?: string
+          recipient_user_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_shares_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           created_at: string
@@ -200,7 +238,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_edit_customer: { Args: { _customer_id: string }; Returns: boolean }
+      can_view_customer: { Args: { _customer_id: string }; Returns: boolean }
+      customer_owner: { Args: { _customer_id: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
