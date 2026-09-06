@@ -5,7 +5,9 @@
 - [x] Two-account verification of sharing rules
 - [x] delete-customer server function that removes stored photo/drawing files with the customer
 
+- [x] Share UI on the customer page (invite by email, view/edit, revoke) via manage-share function
+- [x] Customer deletion wired to delete-customer (removes stored files)
+- [x] Shared customers shown in the customer list with a "Shared with me" badge
+
 ## Later
-- [ ] Wire customer deletion on the customer page to the delete-customer function (file cleanup)
-- [ ] Share UI on customer page (invite by email, list recipients, revoke)
-- [ ] Shared customers in the customer list + designers roll-up
+- [ ] Designers page roll-up for shared customers
