@@ -34,6 +34,8 @@ type Customer = {
   looking_for: string[];
   shoe_size: number | null;
   updated_at: string;
+  user_id: string;
+  shared?: "view" | "edit";
 };
 
 export default function Customers() {
@@ -67,7 +69,7 @@ function CustomerRow({
         <User className="h-4 w-4 text-muted-foreground" />
       </div>
       <div className="flex-1 min-w-0" onClick={(e) => editing && e.stopPropagation()}>
-        {editing ? (
+        {editing && !c.shared ? (
           <Input
             autoFocus
             value={draft}
@@ -87,7 +89,14 @@ function CustomerRow({
             aria-label="Edit customer name"
           />
         ) : (
-          <div className="font-medium truncate">{c.name}</div>
+          <div className="font-medium truncate flex items-center gap-2">
+            <span className="truncate">{c.name}</span>
+            {c.shared && (
+              <span className="shrink-0 text-[10px] uppercase tracking-wide rounded-full border px-2 py-0.5 text-muted-foreground">
+                Shared with me · {c.shared}
+              </span>
+            )}
+          </div>
         )}
         <div className="text-xs text-muted-foreground truncate">
           {[
@@ -100,18 +109,20 @@ function CustomerRow({
             .join(" · ")}
         </div>
       </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={(e) => {
-          e.stopPropagation();
-          setDraft(c.name);
-          setEditing(true);
-        }}
-        aria-label="Edit customer name"
-      >
-        <Pencil className="h-4 w-4" />
-      </Button>
+      {c.shared !== "view" && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={(e) => {
+            e.stopPropagation();
+            setDraft(c.name);
+            setEditing(true);
+          }}
+          aria-label="Edit customer name"
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+      )}
     </Card>
   );
 }
@@ -132,16 +143,28 @@ function CustomersInner() {
     setLoading(true);
     const { data, error } = await supabase
       .from("customers")
-      .select("id,name,phone,email,designers,looking_for,shoe_size,updated_at")
+      .select("id,name,phone,email,designers,looking_for,shoe_size,updated_at,user_id")
       .order("updated_at", { ascending: false });
     if (error) toast.error(error.message);
-    setCustomers((data ?? []) as Customer[]);
+    let list = (data ?? []) as Customer[];
+    if (user) {
+      const { data: shares } = await supabase
+        .from("customer_shares")
+        .select("customer_id,permission")
+        .eq("recipient_user_id", user.id);
+      const map = new Map((shares ?? []).map((s: any) => [s.customer_id, s.permission as "view" | "edit"]));
+      const seen = new Set<string>();
+      list = list
+        .filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true)))
+        .map((c) => (c.user_id === user.id ? c : { ...c, shared: map.get(c.id) ?? "view" }));
+    }
+    setCustomers(list);
     setLoading(false);
   };
 
   useEffect(() => {
     load();
-  }, []);
+  }, [user?.id]);
 
   const results = useMemo(() => {
     const s = q.trim().toLowerCase();

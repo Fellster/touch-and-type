@@ -430,6 +430,7 @@ export default function CustomerDetail() {
                 key={f.id}
                 field={f}
                 value={customer.custom_data?.[f.key]}
+                readOnly={!canEdit}
                 onChange={(v) => updateCustom(f.key, v)}
               />
             ))}
@@ -639,24 +640,25 @@ function TagEditor({ label, values, onChange, readOnly }: { label: string; value
   );
 }
 
-function CustomFieldInput({ field, value, onChange }: { field: CustomField; value: any; onChange: (v: any) => void }) {
+function CustomFieldInput({ field, value, onChange, readOnly }: { field: CustomField; value: any; onChange: (v: any) => void; readOnly?: boolean }) {
   const inputId = useId();
   if (field.field_type === "boolean") {
     return (
       <div className="flex items-center justify-between">
         <Label htmlFor={inputId}>{field.label}</Label>
-        <input id={inputId} type="checkbox" checked={!!value} onChange={(e) => onChange(e.target.checked)} className="h-5 w-5" />
+        <input id={inputId} disabled={readOnly} type="checkbox" checked={!!value} onChange={(e) => onChange(e.target.checked)} className="h-5 w-5" />
       </div>
     );
   }
   if (field.field_type === "tags") {
-    return <TagEditor label={field.label} values={Array.isArray(value) ? value : []} onChange={onChange} />;
+    return <TagEditor label={field.label} values={Array.isArray(value) ? value : []} readOnly={readOnly} onChange={onChange} />;
   }
   return (
     <div>
       <Label htmlFor={inputId}>{field.label}</Label>
       <Input
         id={inputId}
+        readOnly={readOnly}
         type={field.field_type === "number" ? "number" : field.field_type === "date" ? "date" : "text"}
         value={value ?? ""}
         onChange={(e) => onChange(field.field_type === "number" ? (e.target.value === "" ? null : Number(e.target.value)) : e.target.value)}
