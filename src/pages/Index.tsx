@@ -508,14 +508,23 @@ export default function Index() {
 
       <section className="px-5 max-w-2xl mx-auto">
         <form onSubmit={add} className="space-y-2">
-          <Input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={todoPrompt}
-            className="h-11"
-            aria-label="New task"
-          />
-          <div className="flex gap-2">
+          <div className="relative overflow-hidden rounded-md">
+  {!title && (
+    <div className="pointer-events-none absolute inset-y-0 left-3 right-3 flex items-center overflow-hidden">
+      <span className="todo-prompt-scroll whitespace-nowrap text-sm text-muted-foreground">
+        {todoPrompt}
+      </span>
+    </div>
+  )}
+
+  <Input
+    value={title}
+    onChange={(e) => setTitle(e.target.value)}
+    placeholder=""
+    className="h-11 relative bg-transparent"
+    aria-label="New task"
+  />
+</div>
             <Input
               type="datetime-local"
               value={due}
@@ -650,4 +659,25 @@ export default function Index() {
     </main>
 
   );
+}
+@keyframes todo-prompt-scroll {
+  0%,
+  15% {
+    transform: translateX(0);
+  }
+
+  85%,
+  100% {
+    transform: translateX(calc(-100% + 280px));
+  }
+}
+
+.todo-prompt-scroll {
+  animation: todo-prompt-scroll 12s ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .todo-prompt-scroll {
+    animation: none;
+  }
 }
