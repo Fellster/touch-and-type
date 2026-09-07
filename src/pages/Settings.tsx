@@ -33,7 +33,7 @@ export default function Settings() {
     const shareData = {
       title: "Noted",
       text: "Try Noted for keeping track of customers.",
-      url: "https://touch-and-type.lovable.app",
+      url: "https://notedcustomers.netlify.app",
     };
 
     if (navigator.share) {
