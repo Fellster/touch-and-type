@@ -83,3 +83,24 @@
     letter-spacing: -0.01em;
   }
 }
+@keyframes todo-prompt-scroll {
+  0%,
+  15% {
+    transform: translateX(0);
+  }
+
+  85%,
+  100% {
+    transform: translateX(calc(-100% + 280px));
+  }
+}
+
+.todo-prompt-scroll {
+  animation: todo-prompt-scroll 12s ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .todo-prompt-scroll {
+    animation: none;
+  }
+}
