@@ -44,6 +44,10 @@ const [signupComplete, setSignupComplete] = useState(false);
       toast.error(parsed.error.issues[0].message);
       return;
     }
+    if (mode === "signup" && password !== confirmPassword) {
+  toast.error("Passwords do not match");
+  return;
+}
     setBusy(true);
     try {
       if (mode === "signup") {
