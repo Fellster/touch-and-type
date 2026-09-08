@@ -29,6 +29,9 @@ export default function Auth() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+const [showPassword, setShowPassword] = useState(false);
+const [signupComplete, setSignupComplete] = useState(false);
   const [busy, setBusy] = useState(false);
 
   if (loading) return null;
