@@ -181,7 +181,7 @@ function CustomersInner() {
         )
       : [...customers];
 
-    const firstDesigner = (c: Customer) => (c.designers?.[0] ?? "").toLowerCase();
+    
 
 switch (sort) {
   case "customer_asc":
