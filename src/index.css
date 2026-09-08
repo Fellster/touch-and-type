@@ -84,11 +84,6 @@
   }
 }
 @keyframes todo-prompt-scroll {
-  0%,
-  15% {
-    transform: translateX(0);
-  }
-@keyframes todo-prompt-scroll {
   0% {
     transform: translateX(0);
   }
