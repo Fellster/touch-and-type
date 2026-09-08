@@ -145,7 +145,11 @@ setSignupComplete(true);
         </form>
         <button
           type="button"
-          onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+          onClick={() => {
+  setMode(mode === "signin" ? "signup" : "signin");
+  setConfirmPassword("");
+  setSignupComplete(false);
+}}
           className="mt-4 w-full text-sm text-muted-foreground hover:text-foreground transition"
         >
           {mode === "signin" ? "No account? Create one" : "Have an account? Sign in"}
