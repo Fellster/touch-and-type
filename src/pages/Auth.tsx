@@ -93,9 +93,42 @@ setSignupComplete(true);
             <Input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           </div>
           <div>
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" autoComplete={mode === "signin" ? "current-password" : "new-password"} value={password} onChange={(e) => setPassword(e.target.value)} required />
-          </div>
+  <Label htmlFor="password">Password</Label>
+
+  <div className="relative">
+    <Input
+      id="password"
+      type={showPassword ? "text" : "password"}
+      autoComplete={mode === "signin" ? "current-password" : "new-password"}
+      value={password}
+      onChange={(e) => setPassword(e.target.value)}
+      className="pr-16"
+      required
+    />
+
+    <button
+      type="button"
+      onClick={() => setShowPassword((v) => !v)}
+      className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground"
+    >
+      {showPassword ? "Hide" : "Show"}
+    </button>
+  </div>
+</div>
+
+{mode === "signup" && (
+  <div>
+    <Label htmlFor="confirm-password">Confirm password</Label>
+    <Input
+      id="confirm-password"
+      type={showPassword ? "text" : "password"}
+      autoComplete="new-password"
+      value={confirmPassword}
+      onChange={(e) => setConfirmPassword(e.target.value)}
+      required
+    />
+  </div>
+)}
           <Button type="submit" className="w-full" disabled={busy}>
             {busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
           </Button>
