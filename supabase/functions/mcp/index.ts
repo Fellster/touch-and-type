@@ -236,7 +236,7 @@ var append_customer_note_default = defineTool7({
 });
 
 // src/lib/mcp/index.ts
-var projectRef = "bsraswwvdukplopxadmw";
+var projectRef = "cnwvsuiybdubrtxlttwb";
 var mcp_default = defineMcp({
   name: "atelier-mcp",
   title: "Atelier \u2014 Notebook & To-Do",
