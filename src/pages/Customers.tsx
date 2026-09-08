@@ -183,24 +183,24 @@ function CustomersInner() {
 
     const firstDesigner = (c: Customer) => (c.designers?.[0] ?? "").toLowerCase();
 
-    switch (sort) {
-      case "designer_asc":
-        list.sort((a, b) => firstDesigner(a).localeCompare(firstDesigner(b)) || a.name.localeCompare(b.name));
-        break;
-      case "designer_desc":
-        list.sort((a, b) => firstDesigner(b).localeCompare(firstDesigner(a)) || a.name.localeCompare(b.name));
-        break;
-      case "shoe_size_asc":
-        list.sort((a, b) => (a.shoe_size ?? Infinity) - (b.shoe_size ?? Infinity) || a.name.localeCompare(b.name));
-        break;
-      case "shoe_size_desc":
-        list.sort((a, b) => (b.shoe_size ?? -Infinity) - (a.shoe_size ?? -Infinity) || a.name.localeCompare(b.name));
-        break;
-      case "updated_desc":
-      default:
-        list.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
-        break;
-    }
+switch (sort) {
+  case "customer_asc":
+    list.sort((a, b) => a.name.localeCompare(b.name));
+    break;
+
+  case "customer_desc":
+    list.sort((a, b) => b.name.localeCompare(a.name));
+    break;
+
+  case "updated_desc":
+  default:
+    list.sort(
+      (a, b) =>
+        new Date(b.updated_at).getTime() -
+        new Date(a.updated_at).getTime()
+    );
+    break;
+}
     return list;
   }, [customers, q, sort]);
 
@@ -297,11 +297,9 @@ function CustomersInner() {
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="updated_desc">Recently updated</SelectItem>
-              <SelectItem value="designer_asc">{labels.designers} A–Z</SelectItem>
-              <SelectItem value="designer_desc">{labels.designers} Z–A</SelectItem>
-              <SelectItem value="shoe_size_asc">{labels.shoe_size} small → large</SelectItem>
-              <SelectItem value="shoe_size_desc">{labels.shoe_size} large → small</SelectItem>
+              <SelectItem value="updated_desc">Recently Updated</SelectItem>
+<SelectItem value="customer_asc">Customers A–Z</SelectItem>
+<SelectItem value="customer_desc">Customers Z–A</SelectItem>
             </SelectContent>
           </Select>
         </div>
