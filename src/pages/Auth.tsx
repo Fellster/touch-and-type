@@ -141,7 +141,15 @@ setSignupComplete(true);
 )}
           <Button type="submit" className="w-full" disabled={busy}>
             {busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
-          </Button>
+          </Button>{mode === "signin" && (
+  <button
+    type="button"
+    onClick={() => window.location.href = "/forgot-password"}
+    className="mt-4 w-full text-sm text-muted-foreground hover:text-foreground transition"
+  >
+    Forgot password?
+  </button>
+)}
         </form>
         <button
           type="button"
