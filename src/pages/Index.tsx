@@ -475,7 +475,7 @@ export default function Index() {
   return (
     <main className="min-h-screen pb-24">
       <SEO
-        title="To-Do — Atelier"
+        title="Noted"
         description="A simple, private to-do list scheduled by date and time."
         path="/"
       />
