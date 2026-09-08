@@ -57,7 +57,7 @@ const [signupComplete, setSignupComplete] = useState(false);
           options: { emailRedirectTo: `${window.location.origin}${next}` },
         });
         if (error) throw error;
-        toast.success("Check your email for a confirmation link before signing in.");
+setSignupComplete(true);
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: parsed.data.email,
