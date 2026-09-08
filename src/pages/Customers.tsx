@@ -20,10 +20,8 @@ import VoiceCapture, { type ParsedResult } from "@/components/VoiceCapture";
 
 type SortOption =
   | "updated_desc"
-  | "designer_asc"
-  | "designer_desc"
-  | "shoe_size_asc"
-  | "shoe_size_desc";
+  | "customer_asc"
+  | "customer_desc";
 
 type Customer = {
   id: string;
