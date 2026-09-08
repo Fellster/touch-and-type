@@ -87,6 +87,16 @@ setSignupComplete(true);
           <h1 className="text-4xl font-serif">{mode === "signin" ? "Sign in to Noted" : "Create your Noted account"}</h1>
           <p className="text-sm text-muted-foreground mt-1">Your private customer notebook</p>
         </header>
+        {signupComplete && (
+  <div className="mb-5 rounded-md border bg-muted/40 p-4 text-sm">
+    <p className="font-medium">
+      Check your email to finish creating your account.
+    </p>
+    <p className="mt-1 text-muted-foreground">
+      The confirmation email will come from Supabase, our secure account provider.
+    </p>
+  </div>
+)}
         <form onSubmit={submit} className="space-y-4">
           <div>
             <Label htmlFor="email">Email</Label>
