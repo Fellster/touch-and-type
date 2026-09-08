@@ -248,7 +248,7 @@ switch (sort) {
 
   return (
     <main className="min-h-screen pb-24">
-      <SEO title="Customers — Atelier" description="Search and add customer records." path="/customers" />
+      <SEO title="Noted" description="Search and add customer records." path="/customers" />
       <header className="px-5 pt-8 pb-4 max-w-2xl mx-auto">
         <div className="flex items-center justify-between mb-2">
           <Button variant="ghost" size="icon" onClick={() => nav("/")} aria-label="Back">
