@@ -47,7 +47,8 @@ export default function CustomerDetail() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [showCanvas, setShowCanvas] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
-  const saveTimer = useRef<number | null>(null);
+  const [savedCustomer, setSavedCustomer] = useState<Customer | null>(null);
+  const [saving, setSaving] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const [access, setAccess] = useState<"owner" | "edit" | "view">("owner");
   const canEdit = access !== "view";
@@ -161,6 +162,7 @@ export default function CustomerDetail() {
     if (c.error) { toast.error(c.error.message); return; }
     const cust = c.data as Customer;
     setCustomer(cust);
+    setSavedCustomer(cust);
     if (user && cust.user_id === user.id) {
       setAccess("owner");
       const res = await supabase.functions.invoke("manage-share", { body: { customer_id: id, action: "list" } });
@@ -203,14 +205,20 @@ export default function CustomerDetail() {
   const update = (patch: Partial<Customer>) => {
     if (!customer) return;
     if (!canEdit) { toast.error("You have view-only access to this customer"); return; }
-    const next = { ...customer, ...patch };
-    setCustomer(next);
-    if (saveTimer.current) window.clearTimeout(saveTimer.current);
-    saveTimer.current = window.setTimeout(async () => {
-      const { id: _id, user_id: _uid, ...rest } = next;
-      const { error } = await supabase.from("customers").update(rest).eq("id", customer.id);
-      if (error) toast.error(error.message);
-    }, 500);
+    setCustomer({ ...customer, ...patch });
+  };
+
+  const hasUnsavedChanges = !!customer && !!savedCustomer && JSON.stringify(customer) !== JSON.stringify(savedCustomer);
+
+  const saveCustomerChanges = async () => {
+    if (!customer || !canEdit || !hasUnsavedChanges) return;
+    setSaving(true);
+    const { id: _id, user_id: _uid, ...rest } = customer;
+    const { error } = await supabase.from("customers").update(rest).eq("id", customer.id);
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    setSavedCustomer(customer);
+    toast.success("Customer changes saved");
   };
 
   const updateCustom = (key: string, value: any) => {
@@ -375,6 +383,17 @@ export default function CustomerDetail() {
         className="text-3xl md:text-4xl font-serif h-auto py-2 border-0 shadow-none focus-visible:ring-0 px-0 bg-transparent"
         placeholder="Customer name"
       />
+
+      {canEdit && (
+        <div className="mt-3 flex items-center justify-end gap-3">
+          {hasUnsavedChanges && (
+            <span className="text-sm text-muted-foreground">Unsaved changes</span>
+          )}
+          <Button onClick={saveCustomerChanges} disabled={!hasUnsavedChanges || saving}>
+            {saving ? "Saving…" : "Save Changes"}
+          </Button>
+        </div>
+      )}
 
       <Card className="p-4 mt-4 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

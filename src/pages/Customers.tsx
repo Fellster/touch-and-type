@@ -113,10 +113,9 @@ function CustomerRow({
           size="icon"
           onClick={(e) => {
             e.stopPropagation();
-            setDraft(c.name);
-            setEditing(true);
+            onOpen();
           }}
-          aria-label="Edit customer name"
+          aria-label="Edit customer"
         >
           <Pencil className="h-4 w-4" />
         </Button>
