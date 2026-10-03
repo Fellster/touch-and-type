@@ -540,7 +540,7 @@ export default function Index() {
               className="h-11 w-11"
               title="Add task by voice"
             />
-            <Button type="submit" className="h-11 shrink-0 px-3">
+            <Button type="submit" className="h-11 shrink-0 px-2.5 sm:px-3">
               <Plus className="h-4 w-4 mr-1" />
               Add
             </Button>
