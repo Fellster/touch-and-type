@@ -525,12 +525,12 @@ export default function Index() {
               aria-label="New task"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-[minmax(0,1fr)_2.75rem_auto] gap-2">
             <Input
               type="datetime-local"
               value={due}
               onChange={(e) => setDue(e.target.value)}
-              className="flex-1 h-11"
+              className="min-w-0 w-full h-11"
               aria-label="Due date and time"
             />
             <VoiceCapture
@@ -540,7 +540,7 @@ export default function Index() {
               className="h-11 w-11"
               title="Add task by voice"
             />
-            <Button type="submit" className="h-11">
+            <Button type="submit" className="h-11 shrink-0 px-3">
               <Plus className="h-4 w-4 mr-1" />
               Add
             </Button>
