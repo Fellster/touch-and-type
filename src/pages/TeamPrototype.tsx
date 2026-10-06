@@ -51,7 +51,7 @@ export default function TeamPrototype() {
   const visibleFilters = hasTeams ? filters : filters.filter((item) => item.id === "personal");
   const current = filters.find((item) => item.id === filter) ?? filters[0];
   const visibleCustomers = customers.filter((item) => filter === "all" || item.filter === filter);
-  const visibleTodos = todos.filter((item) => filter === "all" || item.filter === filter);
+  const visibleTodos = todos;
 
   const activateTeams = (message: string) => {
     setHasTeams(true);
@@ -103,33 +103,35 @@ export default function TeamPrototype() {
         </div>
       </header>
 
-      <section className="px-5 max-w-2xl mx-auto mt-6">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">
-          {hasTeams ? "Show" : "Current workspace"}
-        </p>
-        <div className="relative">
-          <button type="button" className="w-full min-h-12 rounded-lg border bg-card px-4 py-3 flex items-center gap-3 text-left" onClick={() => setMenuOpen(!menuOpen)} aria-expanded={menuOpen}>
-            {filter === "personal" ? <UserRound className="h-5 w-5 text-primary" /> : <Users className="h-5 w-5 text-primary" />}
-            <span className="flex-1">
-              <span className="block font-medium">{current.name}</span>
-              <span className="block text-xs text-muted-foreground">{current.detail}</span>
-            </span>
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          </button>
-          {menuOpen && (
-            <Card className="absolute z-20 top-full left-0 right-0 mt-2 p-1 shadow-lg">
-              {visibleFilters.map((item) => (
-                <button key={item.id} type="button" onClick={() => chooseFilter(item.id)} className="w-full rounded-md px-3 py-3 flex items-center gap-3 text-left hover:bg-muted">
-                  {item.id === "personal" ? <UserRound className="h-5 w-5" /> : <Users className="h-5 w-5" />}
-                  <span className="flex-1"><span className="block font-medium">{item.name}</span><span className="block text-xs text-muted-foreground">{item.detail}</span></span>
-                  {filter === item.id && <Check className="h-4 w-4 text-primary" />}
-                </button>
-              ))}
-            </Card>
-          )}
-        </div>
-        {hasTeams && <p className="text-xs text-muted-foreground mt-2">This selector filters the lists. It does not move or change ownership.</p>}
-      </section>
+      {tab === "customers" && (
+        <section className="px-5 max-w-2xl mx-auto mt-6">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">
+            {hasTeams ? "Show" : "Current workspace"}
+          </p>
+          <div className="relative">
+            <button type="button" className="w-full min-h-12 rounded-lg border bg-card px-4 py-3 flex items-center gap-3 text-left" onClick={() => setMenuOpen(!menuOpen)} aria-expanded={menuOpen}>
+              {filter === "personal" ? <UserRound className="h-5 w-5 text-primary" /> : <Users className="h-5 w-5 text-primary" />}
+              <span className="flex-1">
+                <span className="block font-medium">{current.name}</span>
+                <span className="block text-xs text-muted-foreground">{current.detail}</span>
+              </span>
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            </button>
+            {menuOpen && (
+              <Card className="absolute z-20 top-full left-0 right-0 mt-2 p-1 shadow-lg">
+                {visibleFilters.map((item) => (
+                  <button key={item.id} type="button" onClick={() => chooseFilter(item.id)} className="w-full rounded-md px-3 py-3 flex items-center gap-3 text-left hover:bg-muted">
+                    {item.id === "personal" ? <UserRound className="h-5 w-5" /> : <Users className="h-5 w-5" />}
+                    <span className="flex-1"><span className="block font-medium">{item.name}</span><span className="block text-xs text-muted-foreground">{item.detail}</span></span>
+                    {filter === item.id && <Check className="h-4 w-4 text-primary" />}
+                  </button>
+                ))}
+              </Card>
+            )}
+          </div>
+          {hasTeams && <p className="text-xs text-muted-foreground mt-2">This selector filters the lists. It does not move or change ownership.</p>}
+        </section>
+      )}
 
       {!hasTeams ? (
         <section className="px-5 max-w-2xl mx-auto mt-6 space-y-5">
@@ -163,24 +165,34 @@ export default function TeamPrototype() {
       </section>
 
       <section className="px-5 max-w-2xl mx-auto mt-5">
-        <Card className="p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Save new {tab === "customers" ? "customer" : "to-do"} to</p>
-          <div className="mt-3 grid gap-2" style={{ gridTemplateColumns: hasTeams ? "repeat(3, minmax(0, 1fr))" : "1fr" }}>
-            {(hasTeams ? filters.filter((item) => item.id !== "all") : filters.filter((item) => item.id === "personal")).map((item) => (
-              <button key={item.id} type="button" onClick={() => setDestination(item.id as Exclude<Filter, "all">)} className={"min-h-10 rounded-md border px-2 text-xs " + (destination === item.id ? "border-primary bg-primary text-primary-foreground" : "bg-background")}>{item.name}</button>
-            ))}
-          </div>
-          <Button className="w-full mt-3" onClick={() => tab === "customers" ? openCustomerForm() : toast.info("Prototype only — saved destination would be " + destinationName)}>
-            <Plus className="h-4 w-4" />Add {tab === "customers" ? "customer" : "to-do"}
-          </Button>
-          <p className="text-xs text-muted-foreground mt-2">The destination is confirmed before saving and cannot be changed by switching the filter.</p>
-        </Card>
+        {tab === "customers" ? (
+          <Card className="p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Save new customer to</p>
+            <div className="mt-3 grid gap-2" style={{ gridTemplateColumns: hasTeams ? "repeat(3, minmax(0, 1fr))" : "1fr" }}>
+              {(hasTeams ? filters.filter((item) => item.id !== "all") : filters.filter((item) => item.id === "personal")).map((item) => (
+                <button key={item.id} type="button" onClick={() => setDestination(item.id as Exclude<Filter, "all">)} className={"min-h-10 rounded-md border px-2 text-xs " + (destination === item.id ? "border-primary bg-primary text-primary-foreground" : "bg-background")}>{item.name}</button>
+              ))}
+            </div>
+            <Button className="w-full mt-3" onClick={openCustomerForm}>
+              <Plus className="h-4 w-4" />Add customer
+            </Button>
+            <p className="text-xs text-muted-foreground mt-2">The destination is confirmed before saving and cannot be changed by switching the filter.</p>
+          </Card>
+        ) : (
+          <Card className="p-4">
+            <h2 className="font-medium">To-Dos stay personal</h2>
+            <p className="text-sm text-muted-foreground mt-1">Teams do not change, own, or separate your To-Dos. They always appear together.</p>
+            <Button className="w-full mt-3" onClick={() => toast.info("The existing Add To-Do screen would open here")}>
+              <Plus className="h-4 w-4" />Add To-Do
+            </Button>
+          </Card>
+        )}
       </section>
 
       <section className="px-5 max-w-2xl mx-auto mt-6">
         <div className="flex items-end justify-between gap-3 mb-3">
           <h2 className="font-serif text-xl">{tab === "customers" ? "Customers" : "To-Dos"}</h2>
-          <span className="text-xs text-muted-foreground">{filter === "all" ? "All Workspaces" : current.name}</span>
+          <span className="text-xs text-muted-foreground">{tab === "todos" ? "All To-Dos" : (filter === "all" ? "All Workspaces" : current.name)}</span>
         </div>
         {tab === "customers" ? (
           <div className="space-y-2">
@@ -196,7 +208,7 @@ export default function TeamPrototype() {
           <div className="space-y-2">
             {visibleTodos.map((todo) => (
               <Card key={todo.task} className="p-4">
-                <div className="flex items-start gap-3"><div className="h-5 w-5 rounded-full border mt-0.5" /><div className="min-w-0 flex-1"><p className="font-medium">{todo.task}</p><p className="text-sm text-muted-foreground mt-1">{todo.due}</p></div><span className="rounded-full border px-2 py-1 text-[11px] whitespace-nowrap">{todo.workspace}</span></div>
+                <div className="flex items-start gap-3"><div className="h-5 w-5 rounded-full border mt-0.5" /><div className="min-w-0 flex-1"><p className="font-medium">{todo.task}</p><p className="text-sm text-muted-foreground mt-1">{todo.due}</p></div></div>
               </Card>
             ))}
           </div>
