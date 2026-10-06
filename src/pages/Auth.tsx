@@ -28,6 +28,7 @@ export default function Auth() {
   const [params] = useSearchParams();
   const next = safeNext(params.get("next"));
   const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -49,13 +50,20 @@ const [signupComplete, setSignupComplete] = useState(false);
   toast.error("Passwords do not match");
   return;
 }
+    if (mode === "signup" && (fullName.trim().length < 2 || fullName.trim().length > 100)) {
+      toast.error("Enter your name");
+      return;
+    }
     setBusy(true);
     try {
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email: parsed.data.email,
           password: parsed.data.password,
-          options: { emailRedirectTo: `${window.location.origin}${next}` },
+          options: {
+            emailRedirectTo: `${window.location.origin}${next}`,
+            data: { full_name: fullName.trim() },
+          },
         });
         if (error) throw error;
 setSignupComplete(true);
@@ -117,6 +125,12 @@ setSignupComplete(true);
   </div>
 )}
         {!signupComplete && <form onSubmit={submit} className="space-y-4">
+          {mode === "signup" && (
+            <div>
+              <Label htmlFor="full-name">Name</Label>
+              <Input id="full-name" type="text" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} required />
+            </div>
+          )}
           <div>
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
