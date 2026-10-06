@@ -17,12 +17,14 @@ type Membership = {
 };
 
 type InviteResult = { link: string; code: string; expires_at: string; emailSent?: boolean };
+type TeamMember = { email: string; role: "admin" | "member"; joined_at: string };
 
 export default function Workspaces() {
   const nav = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const [memberships, setMemberships] = useState<Membership[]>([]);
+  const [teamMembers, setTeamMembers] = useState<Record<string, TeamMember[]>>({});
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [teamName, setTeamName] = useState("");
@@ -57,7 +59,16 @@ export default function Workspaces() {
       .select("team_id,role,teams(id,name,created_by)")
       .order("joined_at", { ascending: true });
     if (error) toast.error(error.message);
-    setMemberships((data ?? []) as Membership[]);
+    const nextMemberships = (data ?? []) as Membership[];
+    setMemberships(nextMemberships);
+    const adminTeams = nextMemberships.filter((membership) => membership.role === "admin");
+    const memberResults = await Promise.all(adminTeams.map(async (membership) => {
+      const result = await supabase.functions.invoke("team-invitations", {
+        body: { action: "list_members", team_id: membership.team_id },
+      });
+      return [membership.team_id, (result.data?.members ?? []) as TeamMember[]] as const;
+    }));
+    setTeamMembers(Object.fromEntries(memberResults));
     setLoading(false);
   };
 
@@ -178,11 +189,24 @@ export default function Workspaces() {
         {loading ? <p className="text-center text-muted-foreground py-8">Loading…</p> : memberships.length === 0 ? (
           <Card className="p-6 text-center"><Users className="h-8 w-8 mx-auto text-muted-foreground" /><p className="font-medium mt-3">You are not on a team yet</p><p className="text-sm text-muted-foreground mt-1">Create a team or accept an invitation.</p></Card>
         ) : memberships.map((membership) => (
-          <Card key={membership.team_id} className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center"><Users className="h-5 w-5" /></div>
-            <div className="flex-1 min-w-0"><p className="font-medium truncate">{membership.teams?.name ?? "Team"}</p><p className="text-xs text-muted-foreground capitalize">{membership.role}</p></div>
-            {membership.role === "admin" && (
-              <><ShieldCheck className="h-5 w-5 text-primary" aria-label="Administrator" /><Button variant="outline" size="sm" onClick={() => setInviteTeam(membership)}>Invite</Button></>
+          <Card key={membership.team_id} className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center"><Users className="h-5 w-5" /></div>
+              <div className="flex-1 min-w-0"><p className="font-medium truncate">{membership.teams?.name ?? "Team"}</p><p className="text-xs text-muted-foreground capitalize">{membership.role}</p></div>
+              {membership.role === "admin" && (
+                <><ShieldCheck className="h-5 w-5 text-primary" aria-label="Administrator" /><Button variant="outline" size="sm" onClick={() => setInviteTeam(membership)}>Invite</Button></>
+              )}
+            </div>
+            {membership.role === "admin" && teamMembers[membership.team_id] && (
+              <div className="mt-4 border-t pt-3 space-y-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Members</p>
+                {teamMembers[membership.team_id].map((member) => (
+                  <div key={member.email} className="flex items-center justify-between gap-3 text-sm">
+                    <span className="truncate">{member.email}</span>
+                    <span className="text-xs text-muted-foreground capitalize shrink-0">{member.role}</span>
+                  </div>
+                ))}
+              </div>
             )}
           </Card>
         ))}
