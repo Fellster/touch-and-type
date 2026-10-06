@@ -99,7 +99,6 @@ export default function Settings() {
                   <span className="text-sm font-medium flex-1">{t.label}</span>
                   {active && <Check className="h-4 w-4 text-primary shrink-0" />}
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">{t.description}</p>
               </button>
             );
           })}
@@ -107,7 +106,7 @@ export default function Settings() {
       </section>
 
       <section className="px-5 max-w-2xl mx-auto mt-8">
-        <h2 className="font-serif text-xl mb-3">App font</h2>
+        <h2 className="font-serif text-xl mb-3">Fonts</h2>
         <div className="grid grid-cols-2 gap-2">
           {(Object.keys(FONTS) as FontKey[]).map((k) => {
             const f = FONTS[k];
@@ -123,12 +122,7 @@ export default function Settings() {
                 }`}
                 style={{ fontFamily: f.stack }}
               >
-                <div className="flex items-center gap-2">
-                  <span className="text-base font-medium flex-1">{f.label}</span>
-                  {active && <Check className="h-4 w-4 text-primary shrink-0" />}
-                </div>
-                <p className="text-sm mt-1">Customer notes and daily tasks</p>
-                <p className="text-xs text-muted-foreground mt-1">{f.description}</p>
+                <span className="text-base font-medium">{f.label}</span>
               </button>
             );
           })}
