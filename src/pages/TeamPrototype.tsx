@@ -17,7 +17,8 @@ const members = [
 
 export default function TeamPrototype() {
   const nav = useNavigate();
-  const [workspace, setWorkspace] = useState<Workspace>("team");
+  const [workspace, setWorkspace] = useState<Workspace>("personal");
+  const [defaultWorkspace, setDefaultWorkspace] = useState<Workspace>("personal");
   const [menuOpen, setMenuOpen] = useState(false);
   const [permissions, setPermissions] = useState<Record<string, Permission>>({ marcia: "Edit", alex: "View" });
   const [duplicateResolved, setDuplicateResolved] = useState(false);
@@ -30,6 +31,12 @@ export default function TeamPrototype() {
   const setAccess = (memberId: string, permission: Permission) => {
     setPermissions((current) => ({ ...current, [memberId]: permission }));
     toast.success("Access changed to " + permission);
+  };
+
+  const activateTeam = (action: "created" | "joined") => {
+    setWorkspace("team");
+    setDefaultWorkspace("team");
+    toast.success(action === "created" ? "Team created and set as default" : "Team joined and set as default");
   };
 
   return (
@@ -71,12 +78,46 @@ export default function TeamPrototype() {
         </div>
       </section>
 
+      <section className="px-5 max-w-2xl mx-auto mt-4">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">Default workspace</p>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setDefaultWorkspace("personal")}
+            className={"min-h-11 rounded-md border px-3 text-sm " + (defaultWorkspace === "personal" ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card")}
+          >
+            Personal
+          </button>
+          <button
+            type="button"
+            onClick={() => setDefaultWorkspace("team")}
+            className={"min-h-11 rounded-md border px-3 text-sm " + (defaultWorkspace === "team" ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card")}
+          >
+            Johnson Shoes
+          </button>
+        </div>
+        <p className="text-xs text-muted-foreground mt-2">
+          Noted opens here after sign-in, including on a new device.
+        </p>
+      </section>
+
       {workspace === "personal" ? (
         <section className="px-5 max-w-2xl mx-auto mt-6 space-y-5">
           <Card className="p-4 flex items-start gap-3">
             <UserRound className="h-5 w-5 text-primary mt-0.5" />
             <div><h2 className="font-medium">Personal workspace</h2><p className="text-sm text-muted-foreground mt-1">Customers added here belong only to you. Team administrators cannot see them.</p></div>
           </Card>
+          <Card className="p-4">
+            <h2 className="font-medium">Work with a team</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Creating or joining your first team makes that Team your default workspace. Personal stays private.
+            </p>
+            <div className="grid grid-cols-2 gap-2 mt-4">
+              <Button variant="outline" onClick={() => activateTeam("joined")}>Join a team</Button>
+              <Button onClick={() => activateTeam("created")}>Create a team</Button>
+            </div>
+          </Card>
+
           <Card className="p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">New customer destination</p>
             <p className="font-medium mt-1">Personal</p>
