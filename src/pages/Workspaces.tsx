@@ -34,6 +34,22 @@ export default function Workspaces() {
   const acceptedToken = useRef<string | null>(null);
   const db = supabase as any;
 
+  const functionErrorMessage = async (error: any, data: any, fallback: string) => {
+    if (data?.error) return String(data.error);
+    const response = error?.context;
+    if (response && typeof response.clone === "function") {
+      try {
+        const body = await response.clone().json();
+        if (body?.error) return String(body.error);
+      } catch {
+        // Keep the friendly fallback when the response is not JSON.
+      }
+    }
+    return error?.message && error.message !== "Edge Function returned a non-2xx status code"
+      ? String(error.message)
+      : fallback;
+  };
+
   const loadTeams = async () => {
     setLoading(true);
     const { data, error } = await db
@@ -51,7 +67,7 @@ export default function Workspaces() {
       body: { action: "accept", ...input },
     });
     setWorking(false);
-    if (error || data?.error) return toast.error(data?.error ?? error?.message ?? "Could not accept invitation");
+    if (error || data?.error) return toast.error(await functionErrorMessage(error, data, "Could not accept this invitation."));
     toast.success("Team joined");
     setJoinCode("");
     nav("/workspaces", { replace: true });
@@ -94,7 +110,7 @@ export default function Workspaces() {
       },
     });
     setWorking(false);
-    if (error || data?.error) return toast.error(data?.error ?? error?.message ?? "Could not create invitation");
+    if (error || data?.error) return toast.error(await functionErrorMessage(error, data, "Could not create this invitation."));
     setInviteResult(data as InviteResult);
   };
 
