@@ -98,3 +98,18 @@
   padding-left: 100%;
   animation: todo-prompt-scroll 18s linear infinite;
 }
+
+
+@layer base {
+  html[data-theme="cubs"] body,
+  html[data-theme="cubs"] main {
+    background-color: hsl(var(--background));
+    background-image: repeating-linear-gradient(90deg, transparent 0, transparent 23px, hsl(216 100% 34% / 0.09) 23px, hsl(216 100% 34% / 0.09) 24px);
+  }
+
+  html[data-theme="yankees"] body,
+  html[data-theme="yankees"] main {
+    background-color: hsl(var(--background));
+    background-image: repeating-linear-gradient(90deg, transparent 0, transparent 23px, hsl(220 57% 18% / 0.055) 23px, hsl(220 57% 18% / 0.055) 24px);
+  }
+}
