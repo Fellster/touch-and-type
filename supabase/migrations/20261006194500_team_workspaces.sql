@@ -38,6 +38,7 @@ create table public.team_invitations (
   email text not null,
   role text not null default 'member' check (role in ('admin', 'member')),
   token_hash text not null unique,
+  code_hash text not null unique,
   invited_by uuid not null references auth.users(id) on delete restrict,
   expires_at timestamptz not null,
   accepted_at timestamptz,
