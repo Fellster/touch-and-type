@@ -16,6 +16,7 @@ import Designers from "./pages/Designers.tsx";
 import ManageFields from "./pages/ManageFields.tsx";
 import OAuthConsent from "./pages/OAuthConsent.tsx";
 import SettingsPage from "./pages/Settings.tsx";
+import TeamPrototype from "./pages/TeamPrototype.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import FloatingMic from "@/components/FloatingMic";
 import { SettingsProvider } from "@/hooks/useSettings";
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="/c/:id" element={<ProtectedRoute><CustomerDetail /></ProtectedRoute>} />
               <Route path="/fields" element={<ProtectedRoute><ManageFields /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+              <Route path="/team-prototype" element={<ProtectedRoute><TeamPrototype /></ProtectedRoute>} />
               <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
