@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate, useSearchParams } from "react-router-dom";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,6 +24,7 @@ const safeNext = (v: string | null): string => {
 
 export default function Auth() {
   const { user, loading } = useAuth();
+  const navigate = useNavigate();
   const [params] = useSearchParams();
   const next = safeNext(params.get("next"));
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -72,6 +73,21 @@ setSignupComplete(true);
     }
   };
 
+  const continueAfterConfirmation = async () => {
+    const parsed = schema.safeParse({ email, password });
+    if (!parsed.success) return toast.error(parsed.error.issues[0].message);
+    setBusy(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: parsed.data.email,
+      password: parsed.data.password,
+    });
+    setBusy(false);
+    if (error) {
+      return toast.error("Confirm your email first, then tap Continue to invitation.");
+    }
+    navigate(next, { replace: true });
+  };
+
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4">
@@ -93,11 +109,14 @@ setSignupComplete(true);
       Check your email to finish creating your account.
     </p>
     <p className="mt-1 text-muted-foreground">
-      The confirmation email will come from Supabase, our secure account provider.
+      Open the confirmation email from Supabase. Then return to this page and continue to your Team invitation.
     </p>
+    <Button type="button" className="mt-3 w-full" disabled={busy} onClick={continueAfterConfirmation}>
+      {busy ? "Checking…" : "Continue to invitation"}
+    </Button>
   </div>
 )}
-        <form onSubmit={submit} className="space-y-4">
+        {!signupComplete && <form onSubmit={submit} className="space-y-4">
           <div>
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
@@ -150,8 +169,8 @@ setSignupComplete(true);
     Forgot password?
   </button>
 )}
-        </form>
-        <button
+        </form>}
+        {!signupComplete && <button
           type="button"
           onClick={() => {
   setMode(mode === "signin" ? "signup" : "signin");
@@ -161,7 +180,7 @@ setSignupComplete(true);
           className="mt-4 w-full text-sm text-muted-foreground hover:text-foreground transition"
         >
           {mode === "signin" ? "No account? Create one" : "Have an account? Sign in"}
-        </button>
+        </button>}
       </Card>
     </main>
   );
