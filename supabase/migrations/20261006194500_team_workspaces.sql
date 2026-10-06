@@ -116,6 +116,55 @@ create trigger add_team_creator
   after insert on public.teams
   for each row execute function private.add_team_creator();
 
+create or replace function private.protect_team_and_customer_ownership()
+returns trigger
+language plpgsql security invoker
+set search_path = ''
+as $
+begin
+  if tg_table_name = 'teams' and new.created_by is distinct from old.created_by then
+    raise exception 'Team ownership cannot be changed directly';
+  end if;
+  if tg_table_name = 'customers'
+     and (new.user_id is distinct from old.user_id or new.team_id is distinct from old.team_id) then
+    raise exception 'Customer workspace ownership cannot be changed directly';
+  end if;
+  return new;
+end
+$;
+
+create trigger protect_team_ownership
+  before update on public.teams
+  for each row execute function private.protect_team_and_customer_ownership();
+create trigger protect_customer_ownership
+  before update on public.customers
+  for each row execute function private.protect_team_and_customer_ownership();
+
+create or replace function private.keep_team_admin()
+returns trigger
+language plpgsql security definer
+set search_path = ''
+as $
+begin
+  if old.role = 'admin' and (tg_op = 'DELETE' or new.role <> 'admin') then
+    if not exists (
+      select 1 from public.team_members tm
+      where tm.team_id = old.team_id
+        and tm.user_id <> old.user_id
+        and tm.role = 'admin'
+    ) then
+      raise exception 'A team must always have at least one administrator';
+    end if;
+  end if;
+  return case when tg_op = 'DELETE' then old else new end;
+end
+$;
+
+revoke all on function private.keep_team_admin() from public, anon, authenticated;
+create trigger keep_team_admin
+  before update or delete on public.team_members
+  for each row execute function private.keep_team_admin();
+
 create or replace function public.can_view_customer(_customer_id uuid)
 returns boolean
 language sql stable security definer
@@ -193,11 +242,7 @@ create policy "insert personal or team customers" on public.customers
 create policy "edit accessible customers without moving ownership" on public.customers
   for update to authenticated
   using (public.can_edit_customer(id))
-  with check (
-    public.can_edit_customer(id)
-    and user_id = public.customer_owner(id)
-    and team_id is not distinct from private.customer_team(id)
-  );
+  with check (public.can_edit_customer(id));
 
 create policy "delete personal or team customers" on public.customers
   for delete to authenticated
@@ -263,6 +308,43 @@ create policy "admins manage invitations" on public.team_invitations
   with check (
     private.is_team_admin(team_id)
     and invited_by = (select auth.uid())
+  );
+
+-- Direct one-to-one sharing remains available only for Personal customers.
+-- Team customer access is controlled by Team administrators above.
+drop policy if exists "owner or recipient reads shares" on public.customer_shares;
+drop policy if exists "owner creates shares" on public.customer_shares;
+drop policy if exists "owner updates shares" on public.customer_shares;
+drop policy if exists "owner revokes shares" on public.customer_shares;
+
+create policy "personal owner or recipient reads shares" on public.customer_shares
+  for select to authenticated using (
+    recipient_user_id = (select auth.uid())
+    or (
+      private.customer_team(customer_id) is null
+      and public.customer_owner(customer_id) = (select auth.uid())
+    )
+  );
+create policy "personal owner creates shares" on public.customer_shares
+  for insert to authenticated with check (
+    private.customer_team(customer_id) is null
+    and public.customer_owner(customer_id) = (select auth.uid())
+    and granted_by = (select auth.uid())
+    and recipient_user_id <> (select auth.uid())
+  );
+create policy "personal owner updates shares" on public.customer_shares
+  for update to authenticated using (
+    private.customer_team(customer_id) is null
+    and public.customer_owner(customer_id) = (select auth.uid())
+  ) with check (
+    private.customer_team(customer_id) is null
+    and public.customer_owner(customer_id) = (select auth.uid())
+    and granted_by = (select auth.uid())
+  );
+create policy "personal owner revokes shares" on public.customer_shares
+  for delete to authenticated using (
+    private.customer_team(customer_id) is null
+    and public.customer_owner(customer_id) = (select auth.uid())
   );
 
 revoke all on public.teams, public.team_members, public.team_customer_access, public.team_invitations from anon;
