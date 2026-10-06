@@ -16,7 +16,7 @@ type Membership = {
   teams: { id: string; name: string; created_by: string } | null;
 };
 
-type InviteResult = { link: string; code: string; expires_at: string };
+type InviteResult = { link: string; code: string; expires_at: string; emailSent?: boolean };
 
 export default function Workspaces() {
   const nav = useNavigate();
@@ -111,7 +111,34 @@ export default function Workspaces() {
     });
     setWorking(false);
     if (error || data?.error) return toast.error(await functionErrorMessage(error, data, "Could not create this invitation."));
-    setInviteResult(data as InviteResult);
+    const result = data as InviteResult;
+    setInviteResult(result);
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+    if (!accessToken) return toast.error("Invitation created, but the email could not be sent. Copy the link or code instead.");
+
+    try {
+      const emailResponse = await fetch("/.netlify/functions/send-team-invite", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          team_id: inviteTeam.team_id,
+          email: inviteEmail.trim(),
+          link: result.link,
+          code: result.code,
+        }),
+      });
+      const emailData = await emailResponse.json().catch(() => ({}));
+      if (!emailResponse.ok) throw new Error(emailData?.error || "Email could not be sent");
+      setInviteResult({ ...result, emailSent: true });
+      toast.success("Invitation emailed");
+    } catch (emailError) {
+      toast.error(emailError instanceof Error ? emailError.message : "Invitation created, but the email could not be sent.");
+    }
   };
 
   const copy = async (value: string, label: string) => {
@@ -193,14 +220,14 @@ export default function Workspaces() {
             </>
           ) : (
             <>
-              <DialogHeader><DialogTitle>Invitation ready</DialogTitle><DialogDescription>Send the secure link by email or share the temporary code another way.</DialogDescription></DialogHeader>
+              <DialogHeader><DialogTitle>{inviteResult.emailSent ? "Invitation sent" : "Invitation ready"}</DialogTitle><DialogDescription>{inviteResult.emailSent ? `An email was sent to ${inviteEmail}.` : "The email could not be sent automatically. Copy the secure link or temporary code instead."}</DialogDescription></DialogHeader>
               <Card className="p-3">
                 <p className="text-xs text-muted-foreground">Temporary code</p>
                 <div className="flex items-center gap-2 mt-1"><p className="font-mono text-xl font-semibold tracking-wider flex-1">{inviteResult.code}</p><Button size="icon" variant="ghost" onClick={() => copy(inviteResult.code, "Code")}><Copy className="h-4 w-4" /></Button></div>
               </Card>
               <div className="grid grid-cols-2 gap-2">
                 <Button variant="outline" onClick={() => copy(inviteResult.link, "Link")}><Copy className="h-4 w-4 mr-2" />Copy link</Button>
-                <Button onClick={emailInvitation}><Mail className="h-4 w-4 mr-2" />Email invite</Button>
+                {!inviteResult.emailSent && <Button onClick={emailInvitation}><Mail className="h-4 w-4 mr-2" />Open email</Button>}
               </div>
               <p className="text-xs text-muted-foreground">For security, Noted will not show this code again after you close this window.</p>
               <Button variant="ghost" onClick={closeInvitation}>Done</Button>
