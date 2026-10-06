@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Copy, Mail, Plus, ShieldCheck, UserRound, Users } from "lucide-react";
+import { ArrowLeft, Copy, Mail, Plus, ShieldCheck, Trash2, UserRound, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,7 +17,7 @@ type Membership = {
 };
 
 type InviteResult = { link: string; code: string; expires_at: string; emailSent?: boolean };
-type TeamMember = { name: string; email: string; role: "admin" | "member"; joined_at: string };
+type TeamMember = { user_id: string; name: string; email: string; role: "admin" | "member"; joined_at: string };
 
 export default function Workspaces() {
   const nav = useNavigate();
@@ -25,6 +25,7 @@ export default function Workspaces() {
   const { user } = useAuth();
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [teamMembers, setTeamMembers] = useState<Record<string, TeamMember[]>>({});
+  const [removeMember, setRemoveMember] = useState<{ team_id: string; member: TeamMember } | null>(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [teamName, setTeamName] = useState("");
@@ -157,6 +158,19 @@ export default function Workspaces() {
     toast.success(label + " copied");
   };
 
+  const confirmRemoveMember = async () => {
+    if (!removeMember) return;
+    setWorking(true);
+    const { data, error } = await supabase.functions.invoke("team-invitations", {
+      body: { action: "remove_member", team_id: removeMember.team_id, user_id: removeMember.member.user_id },
+    });
+    setWorking(false);
+    if (error || data?.error) return toast.error(await functionErrorMessage(error, data, "Could not remove this Team member."));
+    toast.success((removeMember.member.name || removeMember.member.email) + " removed");
+    setRemoveMember(null);
+    await loadTeams();
+  };
+
   const emailInvitation = () => {
     if (!inviteResult || !inviteTeam) return;
     const subject = encodeURIComponent("Join " + (inviteTeam.teams?.name ?? "my team") + " in Noted");
@@ -201,12 +215,17 @@ export default function Workspaces() {
               <div className="mt-4 border-t pt-3 space-y-2">
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Members</p>
                 {teamMembers[membership.team_id].map((member) => (
-                  <div key={member.email} className="flex items-center justify-between gap-3 text-sm">
+                  <div key={member.user_id} className="flex items-center justify-between gap-3 text-sm">
                     <div className="min-w-0">
                       <p className="font-medium truncate">{member.name || member.email.split("@")[0]}</p>
                       <p className="text-xs text-muted-foreground truncate">{member.email}</p>
                     </div>
                     <span className="text-xs text-muted-foreground capitalize shrink-0">{member.role}</span>
+                    {member.user_id !== user?.id && member.user_id !== membership.teams?.created_by && (
+                      <Button variant="ghost" size="icon" className="text-destructive shrink-0" onClick={() => setRemoveMember({ team_id: membership.team_id, member })} aria-label={`Remove ${member.name || member.email}`}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -260,6 +279,21 @@ export default function Workspaces() {
               <Button variant="ghost" onClick={closeInvitation}>Done</Button>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(removeMember)} onOpenChange={(open) => !open && !working && setRemoveMember(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Remove Team member?</DialogTitle>
+            <DialogDescription>
+              {removeMember?.member.name || removeMember?.member.email} will immediately lose access to this Team and its customers. Their Personal customers and other Teams will not be affected.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="ghost" disabled={working} onClick={() => setRemoveMember(null)}>Cancel</Button>
+            <Button type="button" variant="destructive" disabled={working} onClick={confirmRemoveMember}>{working ? "Removing…" : "Remove member"}</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </main>
