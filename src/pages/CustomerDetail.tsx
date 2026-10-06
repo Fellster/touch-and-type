@@ -19,6 +19,7 @@ import VoiceCapture, { type ParsedResult } from "@/components/VoiceCapture";
 type Customer = {
   id: string;
   user_id: string;
+  team_id: string | null;
   name: string;
   phone: string | null;
   email: string | null;
@@ -32,6 +33,7 @@ type Customer = {
 
 type CustomField = { id: string; key: string; label: string; field_type: string; sort_order: number };
 type Share = { id: string; recipient_user_id: string; permission: "view" | "edit"; email: string };
+type TeamMemberAccess = { user_id: string; email: string; role: "admin" | "member"; permission: "none" | "view" | "edit"; locked: boolean };
 type Drawing = { id: string; storage_path: string; ocr_text: string | null; url?: string };
 type Photo = { id: string; storage_path: string; url?: string };
 
@@ -57,6 +59,8 @@ export default function CustomerDetail() {
   const [shareEmail, setShareEmail] = useState("");
   const [sharePerm, setSharePerm] = useState<"view" | "edit">("view");
   const [shareBusy, setShareBusy] = useState(false);
+  const [teamMembers, setTeamMembers] = useState<TeamMemberAccess[]>([]);
+  const [teamAccessBusy, setTeamAccessBusy] = useState(false);
   const [todoOpen, setTodoOpen] = useState(false);
   const [todoText, setTodoText] = useState("");
   const [todoDue, setTodoDue] = useState("");
@@ -151,6 +155,17 @@ export default function CustomerDetail() {
     }
   };
 
+  const callTeamAccess = async (payload: Record<string, unknown>) => {
+    if (!id) return;
+    setTeamAccessBusy(true);
+    const res = await supabase.functions.invoke("team-customer-access", { body: { customer_id: id, ...payload } });
+    setTeamAccessBusy(false);
+    const error = (res.data as any)?.error ?? (res.error ? "Could not update Team access" : null);
+    if (error) { toast.error(String(error)); return; }
+    setTeamMembers(((res.data as any)?.members ?? []) as TeamMemberAccess[]);
+    return true;
+  };
+
   const load = async () => {
     if (!id) return;
     const [c, f, d, p] = await Promise.all([
@@ -163,18 +178,40 @@ export default function CustomerDetail() {
     const cust = c.data as Customer;
     setCustomer(cust);
     setSavedCustomer(cust);
-    if (user && cust.user_id === user.id) {
+    if (user && cust.team_id) {
+      const { data: membership } = await (supabase as any)
+        .from("team_members")
+        .select("role")
+        .eq("team_id", cust.team_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (membership?.role === "admin") {
+        setAccess("owner");
+        const res = await supabase.functions.invoke("team-customer-access", { body: { customer_id: id, action: "list" } });
+        setTeamMembers(((res.data as any)?.members ?? []) as TeamMemberAccess[]);
+      } else if (cust.user_id === user.id) {
+        setAccess("edit");
+      } else {
+        const { data: teamPermission } = await (supabase as any)
+          .from("team_customer_access")
+          .select("permission")
+          .eq("customer_id", id)
+          .eq("user_id", user.id)
+          .maybeSingle();
+        setAccess(teamPermission?.permission === "edit" ? "edit" : "view");
+      }
+    } else if (user && cust.user_id === user.id) {
       setAccess("owner");
       const res = await supabase.functions.invoke("manage-share", { body: { customer_id: id, action: "list" } });
       setShares(((res.data as any)?.shares ?? []) as Share[]);
     } else if (user) {
-      const { data: sh } = await supabase
+      const { data: share } = await supabase
         .from("customer_shares")
         .select("permission")
         .eq("customer_id", id)
         .eq("recipient_user_id", user.id)
         .maybeSingle();
-      setAccess(sh?.permission === "edit" ? "edit" : "view");
+      setAccess(share?.permission === "edit" ? "edit" : "view");
     }
     setFields((f.data ?? []) as CustomField[]);
 
@@ -457,7 +494,7 @@ export default function CustomerDetail() {
         )}
       </Card>
 
-      {isOwner && (
+      {isOwner && !customer.team_id && (
         <section className="mt-6">
           <h2 className="font-serif text-2xl mb-2">Share</h2>
           <Card className="p-4 space-y-3">
@@ -524,6 +561,34 @@ export default function CustomerDetail() {
                 ))}
               </ul>
             )}
+          </Card>
+        </section>
+      )}
+
+      {isOwner && customer.team_id && (
+        <section className="mt-6">
+          <h2 className="font-serif text-2xl mb-2">Team access</h2>
+          <Card className="p-4 space-y-3">
+            <p className="text-sm text-muted-foreground">Choose which Team members can see or edit this customer. Administrators and the person who added the customer always have Edit access.</p>
+            {teamMembers.map((member) => (
+              <div key={member.user_id} className="flex flex-col sm:flex-row sm:items-center gap-2 border rounded-md p-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{member.email}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{member.role}{member.locked ? " · Always Edit" : ""}</p>
+                </div>
+                <select
+                  className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                  value={member.permission}
+                  disabled={member.locked || teamAccessBusy}
+                  onChange={(event) => callTeamAccess({ action: "set", user_id: member.user_id, permission: event.target.value })}
+                  aria-label={`Access for ${member.email}`}
+                >
+                  <option value="none">No access</option>
+                  <option value="view">View</option>
+                  <option value="edit">Edit</option>
+                </select>
+              </div>
+            ))}
           </Card>
         </section>
       )}
