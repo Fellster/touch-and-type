@@ -4,10 +4,13 @@ import { ArrowLeft, Check, ChevronDown, Merge, Plus, ShieldCheck, UserRound, Use
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import SEO from "@/components/SEO";
 
 type Workspace = "personal" | "team";
 type Permission = "No access" | "View" | "Edit";
+type TeamAction = "create" | "join" | null;
 
 const members = [
   { id: "keith", name: "Keith Fell", role: "Administrator" },
@@ -22,6 +25,10 @@ export default function TeamPrototype() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [permissions, setPermissions] = useState<Record<string, Permission>>({ marcia: "Edit", alex: "View" });
   const [duplicateResolved, setDuplicateResolved] = useState(false);
+  const [teamName, setTeamName] = useState("Johnson Shoes");
+  const [teamAction, setTeamAction] = useState<TeamAction>(null);
+  const [newTeamName, setNewTeamName] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
 
   const chooseWorkspace = (next: Workspace) => {
     setWorkspace(next);
@@ -33,9 +40,11 @@ export default function TeamPrototype() {
     toast.success("Access changed to " + permission);
   };
 
-  const activateTeam = (action: "created" | "joined") => {
+  const activateTeam = (action: "created" | "joined", name: string) => {
+    setTeamName(name);
     setWorkspace("team");
     setDefaultWorkspace("team");
+    setTeamAction(null);
     toast.success(action === "created" ? "Team created and set as default" : "Team joined and set as default");
   };
 
@@ -58,7 +67,7 @@ export default function TeamPrototype() {
           <button type="button" className="w-full min-h-12 rounded-lg border bg-card px-4 py-3 flex items-center gap-3 text-left" onClick={() => setMenuOpen(!menuOpen)} aria-expanded={menuOpen}>
             {workspace === "team" ? <Users className="h-5 w-5 text-primary" /> : <UserRound className="h-5 w-5 text-primary" />}
             <span className="flex-1">
-              <span className="block font-medium">{workspace === "team" ? "Johnson Shoes" : "Personal"}</span>
+              <span className="block font-medium">{workspace === "team" ? teamName : "Personal"}</span>
               <span className="block text-xs text-muted-foreground">{workspace === "team" ? "Team workspace · You are administrator" : "Private · Only you"}</span>
             </span>
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -70,7 +79,7 @@ export default function TeamPrototype() {
                 {workspace === "personal" && <Check className="h-4 w-4 text-primary" />}
               </button>
               <button type="button" onClick={() => chooseWorkspace("team")} className="w-full rounded-md px-3 py-3 flex items-center gap-3 text-left hover:bg-muted">
-                <Users className="h-5 w-5" /><span className="flex-1"><span className="block font-medium">Johnson Shoes</span><span className="block text-xs text-muted-foreground">Team workspace</span></span>
+                <Users className="h-5 w-5" /><span className="flex-1"><span className="block font-medium">{teamName}</span><span className="block text-xs text-muted-foreground">Team workspace</span></span>
                 {workspace === "team" && <Check className="h-4 w-4 text-primary" />}
               </button>
             </Card>
@@ -93,7 +102,7 @@ export default function TeamPrototype() {
             onClick={() => setDefaultWorkspace("team")}
             className={"min-h-11 rounded-md border px-3 text-sm " + (defaultWorkspace === "team" ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card")}
           >
-            Johnson Shoes
+            {teamName}
           </button>
         </div>
         <p className="text-xs text-muted-foreground mt-2">
@@ -113,8 +122,8 @@ export default function TeamPrototype() {
               Creating or joining your first team makes that Team your default workspace. Personal stays private.
             </p>
             <div className="grid grid-cols-2 gap-2 mt-4">
-              <Button variant="outline" onClick={() => activateTeam("joined")}>Join a team</Button>
-              <Button onClick={() => activateTeam("created")}>Create a team</Button>
+              <Button variant="outline" onClick={() => setTeamAction("join")}>Join a team</Button>
+              <Button onClick={() => setTeamAction("create")}>Create a team</Button>
             </div>
           </Card>
 
@@ -132,11 +141,11 @@ export default function TeamPrototype() {
         <section className="px-5 max-w-2xl mx-auto mt-6 space-y-7">
           <Card className="p-4 border-primary/40 flex items-start gap-3">
             <ShieldCheck className="h-5 w-5 text-primary mt-0.5" />
-            <div><h2 className="font-medium">Johnson Shoes — Team workspace</h2><p className="text-sm text-muted-foreground mt-1">Customers added here belong to Johnson Shoes. Only administrators manage access.</p></div>
+            <div><h2 className="font-medium">{teamName} — Team workspace</h2><p className="text-sm text-muted-foreground mt-1">Customers added here belong to {teamName}. Only administrators manage access.</p></div>
           </Card>
           <Card className="p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">New customer destination</p>
-            <p className="font-medium mt-1">Johnson Shoes</p>
+            <p className="font-medium mt-1">{teamName}</p>
             <Button className="w-full mt-4" onClick={() => toast.info("Prototype only — no customer was added")}><Plus className="h-4 w-4" />Add team customer</Button>
           </Card>
           <div>
@@ -184,6 +193,61 @@ export default function TeamPrototype() {
           </div>
         </section>
       )}
+      <Dialog open={teamAction === "create"} onOpenChange={(open) => !open && setTeamAction(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create a team</DialogTitle>
+            <DialogDescription>You will become the first administrator.</DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              const name = newTeamName.trim();
+              if (!name) return toast.error("Enter a team name");
+              activateTeam("created", name);
+              setNewTeamName("");
+            }}
+            className="space-y-4"
+          >
+            <Input value={newTeamName} onChange={(event) => setNewTeamName(event.target.value)} placeholder="Team name" aria-label="Team name" autoFocus />
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setTeamAction(null)}>Cancel</Button>
+              <Button type="submit">Create team</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={teamAction === "join"} onOpenChange={(open) => !open && setTeamAction(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Join a team</DialogTitle>
+            <DialogDescription>Use the secure email invitation or a temporary code from the administrator.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Card className="p-4">
+              <p className="font-medium">Email invitation link</p>
+              <p className="text-sm text-muted-foreground mt-1">Open the invitation sent to your email. The link identifies the correct team.</p>
+              <Button className="w-full mt-3" variant="outline" onClick={() => activateTeam("joined", "Johnson Shoes")}>Simulate email invitation</Button>
+            </Card>
+            <Card className="p-4">
+              <p className="font-medium">Temporary invitation code</p>
+              <p className="text-sm text-muted-foreground mt-1">Enter the single-use code supplied by the administrator.</p>
+              <Input className="mt-3" value={inviteCode} onChange={(event) => setInviteCode(event.target.value.toUpperCase())} placeholder="Example: JSHOES-4827" aria-label="Invitation code" />
+              <Button
+                className="w-full mt-3"
+                onClick={() => {
+                  if (!inviteCode.trim()) return toast.error("Enter an invitation code");
+                  activateTeam("joined", "Johnson Shoes");
+                  setInviteCode("");
+                }}
+              >
+                Join with code
+              </Button>
+            </Card>
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
