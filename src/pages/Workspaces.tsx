@@ -17,7 +17,7 @@ type Membership = {
 };
 
 type InviteResult = { link: string; code: string; expires_at: string; emailSent?: boolean };
-type TeamMember = { email: string; role: "admin" | "member"; joined_at: string };
+type TeamMember = { name: string; email: string; role: "admin" | "member"; joined_at: string };
 
 export default function Workspaces() {
   const nav = useNavigate();
@@ -202,7 +202,10 @@ export default function Workspaces() {
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Members</p>
                 {teamMembers[membership.team_id].map((member) => (
                   <div key={member.email} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="truncate">{member.email}</span>
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{member.name || member.email.split("@")[0]}</p>
+                      <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+                    </div>
                     <span className="text-xs text-muted-foreground capitalize shrink-0">{member.role}</span>
                   </div>
                 ))}
