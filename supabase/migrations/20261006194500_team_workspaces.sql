@@ -121,7 +121,7 @@ create or replace function private.protect_team_and_customer_ownership()
 returns trigger
 language plpgsql security invoker
 set search_path = ''
-as $
+as $body$
 begin
   if tg_table_name = 'teams' and new.created_by is distinct from old.created_by then
     raise exception 'Team ownership cannot be changed directly';
@@ -132,7 +132,7 @@ begin
   end if;
   return new;
 end
-$;
+$body$;
 
 create trigger protect_team_ownership
   before update on public.teams
@@ -145,7 +145,7 @@ create or replace function private.keep_team_admin()
 returns trigger
 language plpgsql security definer
 set search_path = ''
-as $
+as $body$
 begin
   if old.role = 'admin' and (tg_op = 'DELETE' or new.role <> 'admin') then
     if not exists (
@@ -159,7 +159,7 @@ begin
   end if;
   return case when tg_op = 'DELETE' then old else new end;
 end
-$;
+$body$;
 
 revoke all on function private.keep_team_admin() from public, anon, authenticated;
 create trigger keep_team_admin
