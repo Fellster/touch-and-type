@@ -55,8 +55,15 @@ Deno.serve(async (req) => {
       if (!emailPattern.test(email)) return json({ error: "Enter a valid email address" }, 400);
       if (email === (user.email ?? "").toLowerCase()) return json({ error: "That is your own account." }, 400);
 
-      const { data: membership } = await admin.from("team_members").select("role").eq("team_id", teamId).eq("user_id", user.id).maybeSingle();
-      if (membership?.role !== "admin") return json({ error: "Only a Team administrator can invite members." }, 403);
+      const [{ data: team, error: teamError }, { data: membership, error: membershipError }] = await Promise.all([
+        admin.from("teams").select("created_by").eq("id", teamId).maybeSingle(),
+        admin.from("team_members").select("role").eq("team_id", teamId).eq("user_id", user.id).maybeSingle(),
+      ]);
+      if (teamError || membershipError) return json({ error: "Could not verify Team permissions." }, 500);
+      if (!team) return json({ error: "Team not found." }, 404);
+      if (team.created_by !== user.id && membership?.role !== "admin") {
+        return json({ error: "Only a Team administrator can invite members." }, 403);
+      }
 
       const token = randomToken();
       const code = randomCode();
@@ -117,8 +124,11 @@ Deno.serve(async (req) => {
       if (!uuidPattern.test(invitationId)) return json({ error: "Invalid invitation" }, 400);
       const { data: invitation } = await admin.from("team_invitations").select("team_id").eq("id", invitationId).maybeSingle();
       if (!invitation) return json({ error: "Invitation not found" }, 404);
-      const { data: membership } = await admin.from("team_members").select("role").eq("team_id", invitation.team_id).eq("user_id", user.id).maybeSingle();
-      if (membership?.role !== "admin") return json({ error: "Only a Team administrator can revoke invitations." }, 403);
+      const [{ data: team }, { data: membership }] = await Promise.all([
+        admin.from("teams").select("created_by").eq("id", invitation.team_id).maybeSingle(),
+        admin.from("team_members").select("role").eq("team_id", invitation.team_id).eq("user_id", user.id).maybeSingle(),
+      ]);
+      if (team?.created_by !== user.id && membership?.role !== "admin") return json({ error: "Only a Team administrator can revoke invitations." }, 403);
       const { error } = await admin.from("team_invitations").update({ revoked_at: new Date().toISOString() }).eq("id", invitationId);
       if (error) return json({ error: error.message }, 500);
       return json({ ok: true });
