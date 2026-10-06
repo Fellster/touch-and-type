@@ -40,6 +40,13 @@ export default function TeamPrototype() {
   const [inviteCode, setInviteCode] = useState("");
   const [destination, setDestination] = useState<Exclude<Filter, "all">>("personal");
   const [tab, setTab] = useState<"customers" | "todos">("customers");
+  const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
+  const [customerStep, setCustomerStep] = useState<"form" | "duplicate" | "saved">("form");
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerCompany, setCustomerCompany] = useState("");
+  const [customerNotes, setCustomerNotes] = useState("");
 
   const visibleFilters = hasTeams ? filters : filters.filter((item) => item.id === "personal");
   const current = filters.find((item) => item.id === filter) ?? filters[0];
@@ -58,6 +65,29 @@ export default function TeamPrototype() {
     setFilter(next);
     setMenuOpen(false);
     if (next !== "all") setDestination(next);
+  };
+
+  const destinationName = filters.find((item) => item.id === destination)?.name ?? "Personal";
+
+  const openCustomerForm = () => {
+    setCustomerStep("form");
+    setCustomerDialogOpen(true);
+  };
+
+  const resetCustomerForm = () => {
+    setCustomerName("");
+    setCustomerPhone("");
+    setCustomerEmail("");
+    setCustomerCompany("");
+    setCustomerNotes("");
+    setCustomerStep("form");
+    setCustomerDialogOpen(false);
+  };
+
+  const checkCustomer = () => {
+    if (!customerName.trim()) return toast.error("Enter the customer's name");
+    const possibleDuplicate = customerName.toLowerCase().includes("jane") || customerPhone.replace(/\D/g, "").endsWith("0132");
+    setCustomerStep(possibleDuplicate ? "duplicate" : "saved");
   };
 
   return (
@@ -140,7 +170,7 @@ export default function TeamPrototype() {
               <button key={item.id} type="button" onClick={() => setDestination(item.id as Exclude<Filter, "all">)} className={"min-h-10 rounded-md border px-2 text-xs " + (destination === item.id ? "border-primary bg-primary text-primary-foreground" : "bg-background")}>{item.name}</button>
             ))}
           </div>
-          <Button className="w-full mt-3" onClick={() => toast.info("Prototype only — saved destination would be " + filters.find((item) => item.id === destination)?.name)}>
+          <Button className="w-full mt-3" onClick={() => tab === "customers" ? openCustomerForm() : toast.info("Prototype only — saved destination would be " + destinationName)}>
             <Plus className="h-4 w-4" />Add {tab === "customers" ? "customer" : "to-do"}
           </Button>
           <p className="text-xs text-muted-foreground mt-2">The destination is confirmed before saving and cannot be changed by switching the filter.</p>
@@ -183,6 +213,76 @@ export default function TeamPrototype() {
           </Card>
         </section>
       )}
+
+      <Dialog open={customerDialogOpen} onOpenChange={(open) => { if (!open) resetCustomerForm(); }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          {customerStep === "form" && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Add Customer</DialogTitle>
+                <DialogDescription>Choose where this customer belongs before saving.</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">Saving to</p>
+                  <div className="grid gap-2" style={{ gridTemplateColumns: hasTeams ? "repeat(3, minmax(0, 1fr))" : "1fr" }}>
+                    {(hasTeams ? filters.filter((item) => item.id !== "all") : filters.filter((item) => item.id === "personal")).map((item) => (
+                      <button key={item.id} type="button" onClick={() => setDestination(item.id as Exclude<Filter, "all">)} className={"min-h-10 rounded-md border px-2 text-xs " + (destination === item.id ? "border-primary bg-primary text-primary-foreground" : "bg-background")}>{item.name}</button>
+                    ))}
+                  </div>
+                  <div className="mt-2 rounded-md bg-muted px-3 py-2 text-sm font-medium">Saving to: {destinationName}</div>
+                </div>
+                <div className="space-y-3">
+                  <Input value={customerName} onChange={(event) => setCustomerName(event.target.value)} placeholder="Customer name *" aria-label="Customer name" autoFocus />
+                  <Input value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} placeholder="Phone" aria-label="Phone" inputMode="tel" />
+                  <Input value={customerEmail} onChange={(event) => setCustomerEmail(event.target.value)} placeholder="Email" aria-label="Email" inputMode="email" />
+                  <Input value={customerCompany} onChange={(event) => setCustomerCompany(event.target.value)} placeholder="Company" aria-label="Company" />
+                  <textarea value={customerNotes} onChange={(event) => setCustomerNotes(event.target.value)} placeholder="Notes" aria-label="Notes" rows={3} className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                </div>
+                <Card className="p-3 text-sm text-muted-foreground">
+                  Photos, drawings, and custom fields can be added after the customer is saved.
+                </Card>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="ghost" onClick={resetCustomerForm}>Cancel</Button>
+                <Button type="button" onClick={checkCustomer}>Review and save</Button>
+              </DialogFooter>
+            </>
+          )}
+
+          {customerStep === "duplicate" && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Possible duplicate found</DialogTitle>
+                <DialogDescription>Noted checks every workspace you can access without combining records automatically.</DialogDescription>
+              </DialogHeader>
+              <Card className="p-4 border-amber-500/50">
+                <p className="font-medium">Jane Miller</p>
+                <p className="text-sm text-muted-foreground mt-1">(847) 555-0132</p>
+                <span className="inline-block rounded-full border px-2 py-1 text-[11px] mt-3">Johnson Shoes</span>
+              </Card>
+              <p className="text-sm text-muted-foreground">Only a Johnson Shoes administrator can merge records belonging to that team.</p>
+              <div className="space-y-2">
+                <Button variant="outline" className="w-full" onClick={() => toast.info("The existing customer would open here")}>Open existing customer</Button>
+                <Button className="w-full" onClick={() => setCustomerStep("saved")}>Keep separate and save</Button>
+                <Button variant="ghost" className="w-full" onClick={() => setCustomerStep("form")}>Go back</Button>
+              </div>
+            </>
+          )}
+
+          {customerStep === "saved" && (
+            <>
+              <div className="py-5 text-center">
+                <div className="mx-auto h-12 w-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center"><Check className="h-6 w-6" /></div>
+                <DialogTitle className="mt-4">Customer ready to save</DialogTitle>
+                <p className="text-sm text-muted-foreground mt-2">{customerName || "This customer"} will be added to <span className="font-medium text-foreground">{destinationName}</span>.</p>
+                <p className="text-xs text-muted-foreground mt-3">Prototype only — no real customer was created.</p>
+              </div>
+              <Button className="w-full" onClick={resetCustomerForm}>Done</Button>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={teamAction === "create"} onOpenChange={(open) => !open && setTeamAction(null)}>
         <DialogContent className="max-w-md">
