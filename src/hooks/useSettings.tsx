@@ -59,11 +59,11 @@ type Theme = {
   vars: Record<string, string>;
 };
 
-export type FontKey = "inter" | "dmSans" | "manrope" | "kalam";
+export type FontKey = "inter" | "lora" | "manrope" | "kalam";
 
 export const FONTS: Record<FontKey, { label: string; description: string; stack: string }> = {
   inter: { label: "Inter", description: "Clear and easy to read", stack: "'Inter', system-ui, sans-serif" },
-  dmSans: { label: "DM Sans", description: "Friendly and modern", stack: "'DM Sans', system-ui, sans-serif" },
+  lora: { label: "Lora", description: "Classic and highly readable", stack: "'Lora', Georgia, serif" },
   manrope: { label: "Manrope", description: "Clean and contemporary", stack: "'Manrope', system-ui, sans-serif" },
   kalam: { label: "Kalam", description: "Handwritten but easy to read", stack: "'Kalam', 'Comic Sans MS', cursive" },
 };
