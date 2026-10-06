@@ -31,12 +31,22 @@ Deno.serve(async (req) => {
 
     const admin = createClient(url, service, { auth: { persistSession: false } });
 
-    // Only the owner may delete.
+    // Personal customers may be deleted by their owner. Team customers may be deleted only by a Team administrator.
     const { data: customer, error: cErr } = await admin
-      .from("customers").select("id,user_id").eq("id", customerId).maybeSingle();
+      .from("customers").select("id,user_id,team_id").eq("id", customerId).maybeSingle();
     if (cErr) return json({ error: cErr.message }, 500);
     if (!customer) return json({ error: "Not found" }, 404);
-    if (customer.user_id !== userId) return json({ error: "Forbidden" }, 403);
+    if (customer.team_id) {
+      const { data: membership } = await admin
+        .from("team_members")
+        .select("role")
+        .eq("team_id", customer.team_id)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (membership?.role !== "admin") return json({ error: "Only a Team administrator can delete this customer." }, 403);
+    } else if (customer.user_id !== userId) {
+      return json({ error: "Only the Personal customer owner can delete this customer." }, 403);
+    }
 
     const [{ data: photos }, { data: drawings }] = await Promise.all([
       admin.from("photos").select("storage_path").eq("customer_id", customerId),
