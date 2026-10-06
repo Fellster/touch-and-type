@@ -10,10 +10,12 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   ACCENTS,
   DEFAULT_LABELS,
+  FONTS,
   THEMES,
   useSettings,
   type AccentKey,
   type FieldKey,
+  type FontKey,
   type ThemeKey,
 } from "@/hooks/useSettings";
 
@@ -22,7 +24,7 @@ const FIELD_KEYS = Object.keys(DEFAULT_LABELS) as FieldKey[];
 export default function Settings() {
   const nav = useNavigate();
   const { signOut } = useAuth();
-  const { theme, accent, labels, setTheme, setAccent, setLabel, resetLabels } = useSettings();
+  const { theme, accent, font, labels, setTheme, setAccent, setFont, setLabel, resetLabels } = useSettings();
 
   const handleSignOut = async () => {
     await signOut();
@@ -58,7 +60,7 @@ export default function Settings() {
     <main className="min-h-screen bg-background pb-24">
       <SEO
         title="Settings — Noted"
-        description="Choose a theme, change highlight colors and rename the customer fields to match how you work."
+        description="Choose themes and fonts, change highlight colors and rename customer fields to match how you work."
         path="/settings"
       />
       <header className="px-5 pt-6 max-w-2xl mx-auto flex items-center gap-3">
@@ -69,8 +71,7 @@ export default function Settings() {
       </header>
 
       <section className="px-5 max-w-2xl mx-auto mt-6">
-        <h2 className="font-serif text-xl mb-1">Theme</h2>
-        <p className="text-sm text-muted-foreground mb-3">Changes the overall look — colors, corners and fonts.</p>
+        <h2 className="font-serif text-xl mb-3">Themes</h2>
         <div className="grid grid-cols-2 gap-2">
           {(Object.keys(THEMES) as ThemeKey[]).map((k) => {
             const t = THEMES[k];
@@ -99,6 +100,35 @@ export default function Settings() {
                   {active && <Check className="h-4 w-4 text-primary shrink-0" />}
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">{t.description}</p>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="px-5 max-w-2xl mx-auto mt-8">
+        <h2 className="font-serif text-xl mb-3">App font</h2>
+        <div className="grid grid-cols-2 gap-2">
+          {(Object.keys(FONTS) as FontKey[]).map((k) => {
+            const f = FONTS[k];
+            const active = font === k;
+            return (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setFont(k)}
+                aria-pressed={active}
+                className={`rounded-lg border p-3 text-left transition-colors ${
+                  active ? "border-primary bg-accent" : "border-border hover:bg-muted"
+                }`}
+                style={{ fontFamily: f.stack }}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-base font-medium flex-1">{f.label}</span>
+                  {active && <Check className="h-4 w-4 text-primary shrink-0" />}
+                </div>
+                <p className="text-sm mt-1">Customer notes and daily tasks</p>
+                <p className="text-xs text-muted-foreground mt-1">{f.description}</p>
               </button>
             );
           })}
