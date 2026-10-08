@@ -701,10 +701,12 @@ export default function CustomerDetail() {
               )}
               {d.ocr_text ? (
                 <p className="text-sm whitespace-pre-wrap px-1">{d.ocr_text}</p>
-              ) : (
+              ) : d.user_id === user?.id ? (
                 <Button size="sm" variant="secondary" className="w-full" onClick={() => transcribeExisting(d)}>
                   <Sparkles className="h-4 w-4 mr-1" />Transcribe handwriting
                 </Button>
+              ) : (
+                <p className="text-xs text-muted-foreground px-1">No transcription</p>
               )}
               {d.user_id === user?.id && (
                 <Button size="sm" variant="ghost" className="w-full" onClick={() => removeDrawing(d)} aria-label="Delete drawing">
