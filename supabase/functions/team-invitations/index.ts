@@ -125,6 +125,37 @@ Deno.serve(async (req) => {
       return json({ ok: true, revoked_personal_shares: revokedPersonalShares });
     }
 
+    if (action === "delete_team") {
+      const teamId = String(body?.team_id ?? "");
+      if (!uuidPattern.test(teamId)) return json({ error: "Invalid Team" }, 400);
+
+      const { data: team, error: teamError } = await admin
+        .from("teams")
+        .select("id,name,created_by")
+        .eq("id", teamId)
+        .maybeSingle();
+      if (teamError) return json({ error: "Could not verify Team ownership." }, 500);
+      if (!team) return json({ error: "Team not found." }, 404);
+      if (team.created_by !== user.id) {
+        return json({ error: "Only the person who created this Team can delete it." }, 403);
+      }
+
+      const { count: customerCount, error: customerError } = await admin
+        .from("customers")
+        .select("id", { count: "exact", head: true })
+        .eq("team_id", teamId);
+      if (customerError) return json({ error: customerError.message }, 500);
+      if ((customerCount ?? 0) > 0) {
+        return json({ error: "Move or delete this Team's customers before deleting the Team." }, 409);
+      }
+
+      // Memberships and pending invitations cascade. The customer foreign key
+      // uses RESTRICT, providing a final database safeguard against data loss.
+      const { error: deleteError } = await admin.from("teams").delete().eq("id", teamId);
+      if (deleteError) return json({ error: deleteError.message }, 500);
+      return json({ ok: true, deleted_team: team.name });
+    }
+
     if (action === "create") {
       const teamId = String(body?.team_id ?? "");
       const email = String(body?.email ?? "").trim().toLowerCase();
