@@ -56,8 +56,6 @@ function CustomerRow({ c, onOpen, onRename }: { c: Customer; onOpen: () => void;
         ) : (
           <div className="font-medium truncate flex items-center gap-2">
             <span className="truncate">{c.name}</span>
-            <span className="shrink-0 text-[10px] uppercase tracking-wide rounded-full border px-2 py-0.5 text-muted-foreground">{c.workspace_name}</span>
-            {c.shared && !c.team_id && <span className="shrink-0 text-[10px] uppercase tracking-wide rounded-full border px-2 py-0.5 text-muted-foreground">Shared · {c.shared}</span>}
           </div>
         )}
         <div className="text-xs text-muted-foreground truncate">
