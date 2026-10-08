@@ -34,8 +34,9 @@ type Customer = {
 type CustomField = { id: string; key: string; label: string; field_type: string; sort_order: number };
 type Share = { id: string; recipient_user_id: string; permission: "view" | "edit"; email: string };
 type TeamMemberAccess = { user_id: string; email: string; role: "admin" | "member"; permission: "none" | "view" | "edit"; locked: boolean };
-type Drawing = { id: string; storage_path: string; ocr_text: string | null; url?: string };
-type Photo = { id: string; storage_path: string; url?: string };
+type PersonalDetail = { user_id: string; notes: string; wants: string[]; updated_at: string };
+type Drawing = { id: string; user_id: string; storage_path: string; ocr_text: string | null; url?: string };
+type Photo = { id: string; user_id: string; storage_path: string; url?: string };
 
 export default function CustomerDetail() {
   const labels = useLabels();
@@ -47,6 +48,10 @@ export default function CustomerDetail() {
   const [fields, setFields] = useState<CustomField[]>([]);
   const [drawings, setDrawings] = useState<Drawing[]>([]);
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [personalDetails, setPersonalDetails] = useState<PersonalDetail[]>([]);
+  const [personalNotes, setPersonalNotes] = useState("");
+  const [personalWants, setPersonalWants] = useState<string[]>([]);
+  const [personalSaving, setPersonalSaving] = useState(false);
   const [showCanvas, setShowCanvas] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const [savedCustomer, setSavedCustomer] = useState<Customer | null>(null);
@@ -168,11 +173,12 @@ export default function CustomerDetail() {
 
   const load = async () => {
     if (!id) return;
-    const [c, f, d, p] = await Promise.all([
+    const [c, f, d, p, personal] = await Promise.all([
       supabase.from("customers").select("*").eq("id", id).single(),
       supabase.from("custom_fields").select("*").order("sort_order"),
       supabase.from("drawings").select("*").eq("customer_id", id).order("created_at", { ascending: false }),
       supabase.from("photos").select("*").eq("customer_id", id).order("created_at", { ascending: false }),
+      (supabase as any).from("customer_personal_details").select("user_id,notes,wants,updated_at").eq("customer_id", id).order("updated_at", { ascending: false }),
     ]);
     if (c.error) { toast.error(c.error.message); return; }
     const cust = c.data as Customer;
@@ -214,6 +220,11 @@ export default function CustomerDetail() {
       setAccess(share?.permission === "edit" ? "edit" : "view");
     }
     setFields((f.data ?? []) as CustomField[]);
+    const detailRows = (personal.data ?? []) as PersonalDetail[];
+    setPersonalDetails(detailRows);
+    const mine = detailRows.find((row) => row.user_id === user?.id);
+    setPersonalNotes(mine?.notes ?? "");
+    setPersonalWants(mine?.wants ?? []);
 
     const ds = (d.data ?? []) as Drawing[];
     const ps = (p.data ?? []) as Photo[];
@@ -261,6 +272,24 @@ export default function CustomerDetail() {
   const updateCustom = (key: string, value: any) => {
     if (!customer) return;
     update({ custom_data: { ...customer.custom_data, [key]: value } });
+  };
+
+  const savePersonalDetails = async () => {
+    if (!customer || !user) return;
+    setPersonalSaving(true);
+    const { error } = await (supabase as any).from("customer_personal_details").upsert({
+      customer_id: customer.id,
+      user_id: user.id,
+      notes: personalNotes,
+      wants: personalWants,
+    }, { onConflict: "customer_id,user_id" });
+    setPersonalSaving(false);
+    if (error) return toast.error(error.message);
+    setPersonalDetails((rows) => [
+      { user_id: user.id, notes: personalNotes, wants: personalWants, updated_at: new Date().toISOString() },
+      ...rows.filter((row) => row.user_id !== user.id),
+    ]);
+    toast.success("Your customer notes were saved");
   };
 
   const removeCustomer = async () => {
@@ -402,12 +431,6 @@ export default function CustomerDetail() {
       </Dialog>
 
 
-      {!isOwner && (
-        <div className="mb-3 text-sm rounded-md border px-3 py-2 bg-muted/40">
-          Shared with you — {canEdit ? "you can edit this customer." : "view only, you cannot make changes."}
-        </div>
-      )}
-
       <h1 className="sr-only">{customer.name || "Untitled customer"}</h1>
       <label htmlFor="customer-name" className="sr-only">Customer name</label>
       <Input
@@ -433,6 +456,7 @@ export default function CustomerDetail() {
       )}
 
       <Card className="p-4 mt-4 space-y-4">
+        <div className="text-sm text-muted-foreground pb-3 border-b">Workspace: {customer.team_id ? "Team" : "Personal"} · Access: {isOwner ? "Administrator" : canEdit ? "Edit" : "View only"}</div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <Label htmlFor="cust-phone">Phone</Label>
@@ -594,9 +618,46 @@ export default function CustomerDetail() {
       )}
 
       <section className="mt-6">
+        <h2 className="font-serif text-2xl mb-2">My customer notes</h2>
+        <Card className="p-4 space-y-4">
+          <div>
+            <Label htmlFor="personal-notes">My Notes</Label>
+            <Textarea
+              id="personal-notes"
+              value={personalNotes}
+              onChange={(event) => setPersonalNotes(event.target.value)}
+              placeholder="Add notes that only you and Team administrators can see…"
+              rows={5}
+            />
+          </div>
+          <TagEditor label="My Wants" values={personalWants} onChange={setPersonalWants} />
+          <div className="flex justify-end">
+            <Button onClick={savePersonalDetails} disabled={personalSaving}>
+              {personalSaving ? "Saving…" : "Save My Notes"}
+            </Button>
+          </div>
+        </Card>
+      </section>
+
+      {isOwner && customer.team_id && personalDetails.some((row) => row.user_id !== user?.id) && (
+        <section className="mt-6">
+          <h2 className="font-serif text-2xl mb-2">Team member additions</h2>
+          <div className="space-y-3">
+            {personalDetails.filter((row) => row.user_id !== user?.id).map((row) => (
+              <Card key={row.user_id} className="p-4 space-y-2">
+                <p className="font-medium">{teamMembers.find((member) => member.user_id === row.user_id)?.email ?? "Team member"}</p>
+                {row.notes && <p className="text-sm whitespace-pre-wrap">{row.notes}</p>}
+                {row.wants.length > 0 && <p className="text-sm"><span className="text-muted-foreground">Wants:</span> {row.wants.join(" · ")}</p>}
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section className="mt-6">
         <div className="flex items-center justify-between mb-2">
           <h2 className="font-serif text-2xl">
-            <label htmlFor="cust-notes">Notes</label>
+            <label htmlFor="cust-notes">Customer Notes</label>
           </h2>
           {canEdit && <VoiceCapture context="notes" onCommit={applyVoice} variant="outline" size="sm" title="Dictate note" />}
         </div>
@@ -613,7 +674,7 @@ export default function CustomerDetail() {
       <section className="mt-6">
         <div className="flex justify-between items-center mb-2">
           <h2 className="font-serif text-2xl">Drawings</h2>
-          {!showCanvas && canEdit && (
+          {!showCanvas && user && (
             <Button size="sm" onClick={() => setShowCanvas(true)} aria-label="Add new drawing">
               <Pencil className="h-4 w-4 mr-1" />New
             </Button>
@@ -645,7 +706,7 @@ export default function CustomerDetail() {
                   <Sparkles className="h-4 w-4 mr-1" />Transcribe handwriting
                 </Button>
               )}
-              {canEdit && (
+              {d.user_id === user?.id && (
                 <Button size="sm" variant="ghost" className="w-full" onClick={() => removeDrawing(d)} aria-label="Delete drawing">
                   <Trash2 className="h-4 w-4 mr-1" />Delete
                 </Button>
@@ -658,7 +719,7 @@ export default function CustomerDetail() {
       <section className="mt-6">
         <div className="flex justify-between items-center mb-2">
           <h2 className="font-serif text-2xl">Photos</h2>
-          {canEdit && (
+          {user && (
             <Button size="sm" onClick={() => fileInput.current?.click()} aria-label="Add photo">
               <Camera className="h-4 w-4 mr-1" />Add
             </Button>
@@ -669,7 +730,7 @@ export default function CustomerDetail() {
           {photos.map((p) => (
             <div key={p.id} className="relative group">
               {p.url && <img src={p.url} alt={`Photo for ${customer.name || "customer"}`} className="w-full aspect-square object-cover rounded-md" />}
-              {canEdit && <button
+              {p.user_id === user?.id && <button
                 onClick={() => removePhoto(p)}
                 className="absolute top-1 right-1 bg-background/80 rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
                 aria-label="Delete photo"
