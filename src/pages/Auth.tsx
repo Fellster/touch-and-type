@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate, useSearchParams } from "react-router-dom";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,9 +24,11 @@ const safeNext = (v: string | null): string => {
 
 export default function Auth() {
   const { user, loading } = useAuth();
+  const navigate = useNavigate();
   const [params] = useSearchParams();
   const next = safeNext(params.get("next"));
   const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -48,13 +50,20 @@ const [signupComplete, setSignupComplete] = useState(false);
   toast.error("Passwords do not match");
   return;
 }
+    if (mode === "signup" && (fullName.trim().length < 2 || fullName.trim().length > 100)) {
+      toast.error("Enter your name");
+      return;
+    }
     setBusy(true);
     try {
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email: parsed.data.email,
           password: parsed.data.password,
-          options: { emailRedirectTo: `${window.location.origin}${next}` },
+          options: {
+            emailRedirectTo: `${window.location.origin}${next}`,
+            data: { full_name: fullName.trim() },
+          },
         });
         if (error) throw error;
 setSignupComplete(true);
@@ -70,6 +79,21 @@ setSignupComplete(true);
     } finally {
       setBusy(false);
     }
+  };
+
+  const continueAfterConfirmation = async () => {
+    const parsed = schema.safeParse({ email, password });
+    if (!parsed.success) return toast.error(parsed.error.issues[0].message);
+    setBusy(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: parsed.data.email,
+      password: parsed.data.password,
+    });
+    setBusy(false);
+    if (error) {
+      return toast.error("Confirm your email first, then tap Continue to invitation.");
+    }
+    navigate(next, { replace: true });
   };
 
 
@@ -93,11 +117,20 @@ setSignupComplete(true);
       Check your email to finish creating your account.
     </p>
     <p className="mt-1 text-muted-foreground">
-      The confirmation email will come from Supabase, our secure account provider.
+      Open the confirmation email from Supabase. Then return to this page and continue to your Team invitation.
     </p>
+    <Button type="button" className="mt-3 w-full" disabled={busy} onClick={continueAfterConfirmation}>
+      {busy ? "Checking…" : "Continue to invitation"}
+    </Button>
   </div>
 )}
-        <form onSubmit={submit} className="space-y-4">
+        {!signupComplete && <form onSubmit={submit} className="space-y-4">
+          {mode === "signup" && (
+            <div>
+              <Label htmlFor="full-name">Name</Label>
+              <Input id="full-name" type="text" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} required />
+            </div>
+          )}
           <div>
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
@@ -150,8 +183,8 @@ setSignupComplete(true);
     Forgot password?
   </button>
 )}
-        </form>
-        <button
+        </form>}
+        {!signupComplete && <button
           type="button"
           onClick={() => {
   setMode(mode === "signin" ? "signup" : "signin");
@@ -161,7 +194,7 @@ setSignupComplete(true);
           className="mt-4 w-full text-sm text-muted-foreground hover:text-foreground transition"
         >
           {mode === "signin" ? "No account? Create one" : "Have an account? Sign in"}
-        </button>
+        </button>}
       </Card>
     </main>
   );

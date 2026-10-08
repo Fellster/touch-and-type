@@ -171,6 +171,22 @@ export default function Settings() {
 
 
       <section className="px-5 max-w-2xl mx-auto mt-8">
+        <h2 className="font-serif text-xl mb-3">Workspaces</h2>
+        <Card className="p-4">
+          <p className="font-medium">Personal and Teams</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Create teams, view your memberships and manage customer ownership.
+          </p>
+          <Button className="w-full mt-4" onClick={() => nav("/workspaces")}>
+            Manage workspaces
+          </Button>
+          <Button variant="ghost" className="w-full mt-2" onClick={() => nav("/team-prototype")}>
+            View approved prototype
+          </Button>
+        </Card>
+      </section>
+
+      <section className="px-5 max-w-2xl mx-auto mt-8">
         <div className="flex items-center justify-between mb-1">
           <h2 className="font-serif text-xl">Field names</h2>
           <Button variant="ghost" size="sm" onClick={resetLabels}>
