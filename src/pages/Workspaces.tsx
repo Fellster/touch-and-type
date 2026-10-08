@@ -27,6 +27,8 @@ export default function Workspaces() {
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [teamMembers, setTeamMembers] = useState<Record<string, TeamMember[]>>({});
   const [removeMember, setRemoveMember] = useState<{ team_id: string; member: TeamMember } | null>(null);
+  const [deleteTeam, setDeleteTeam] = useState<Membership | null>(null);
+  const [deleteTeamName, setDeleteTeamName] = useState("");
   const [revokePersonalShares, setRevokePersonalShares] = useState(true);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -179,6 +181,20 @@ export default function Workspaces() {
     await loadTeams();
   };
 
+  const confirmDeleteTeam = async () => {
+    if (!deleteTeam || deleteTeamName.trim() !== deleteTeam.teams?.name) return;
+    setWorking(true);
+    const { data, error } = await supabase.functions.invoke("team-invitations", {
+      body: { action: "delete_team", team_id: deleteTeam.team_id },
+    });
+    setWorking(false);
+    if (error || data?.error) return toast.error(await functionErrorMessage(error, data, "Could not delete this Team."));
+    toast.success((deleteTeam.teams?.name ?? "Team") + " deleted");
+    setDeleteTeam(null);
+    setDeleteTeamName("");
+    await loadTeams();
+  };
+
   const emailInvitation = () => {
     if (!inviteResult || !inviteTeam) return;
     const subject = encodeURIComponent("Join " + (inviteTeam.teams?.name ?? "my team") + " in Noted");
@@ -216,7 +232,21 @@ export default function Workspaces() {
               <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center"><Users className="h-5 w-5" /></div>
               <div className="flex-1 min-w-0"><p className="font-medium truncate">{membership.teams?.name ?? "Team"}</p><p className="text-xs text-muted-foreground capitalize">{membership.role}</p></div>
               {membership.role === "admin" && (
-                <><ShieldCheck className="h-5 w-5 text-primary" aria-label="Administrator" /><Button variant="outline" size="sm" onClick={() => setInviteTeam(membership)}>Invite</Button></>
+                <>
+                  <ShieldCheck className="h-5 w-5 text-primary" aria-label="Administrator" />
+                  <Button variant="outline" size="sm" onClick={() => setInviteTeam(membership)}>Invite</Button>
+                  {membership.teams?.created_by === user?.id && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive"
+                      onClick={() => { setDeleteTeamName(""); setDeleteTeam(membership); }}
+                      aria-label={`Delete ${membership.teams?.name ?? "Team"}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </>
               )}
             </div>
             {membership.role === "admin" && teamMembers[membership.team_id] && (
@@ -287,6 +317,38 @@ export default function Workspaces() {
               <Button variant="ghost" onClick={closeInvitation}>Done</Button>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(deleteTeam)} onOpenChange={(open) => { if (!open && !working) { setDeleteTeam(null); setDeleteTeamName(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete {deleteTeam?.teams?.name ?? "Team"}?</DialogTitle>
+            <DialogDescription>
+              This removes the Team, its memberships, and pending invitations. Noted will block deletion if the Team still has customers.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <p className="text-sm">Type <span className="font-medium">{deleteTeam?.teams?.name}</span> to confirm.</p>
+            <Input
+              value={deleteTeamName}
+              onChange={(event) => setDeleteTeamName(event.target.value)}
+              placeholder="Team name"
+              aria-label="Confirm Team name"
+              autoComplete="off"
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="ghost" disabled={working} onClick={() => { setDeleteTeam(null); setDeleteTeamName(""); }}>Cancel</Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={working || deleteTeamName.trim() !== deleteTeam?.teams?.name}
+              onClick={confirmDeleteTeam}
+            >
+              {working ? "Deleting…" : "Delete team"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
