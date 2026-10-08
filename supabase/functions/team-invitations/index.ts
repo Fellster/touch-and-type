@@ -47,6 +47,84 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const action = String(body?.action ?? "");
 
+    if (action === "list_members") {
+      const teamId = String(body?.team_id ?? "");
+      if (!uuidPattern.test(teamId)) return json({ error: "Invalid team" }, 400);
+      const [{ data: team, error: teamError }, { data: membership, error: membershipError }] = await Promise.all([
+        admin.from("teams").select("created_by").eq("id", teamId).maybeSingle(),
+        admin.from("team_members").select("role").eq("team_id", teamId).eq("user_id", user.id).maybeSingle(),
+      ]);
+      if (teamError || membershipError) return json({ error: "Could not verify Team permissions." }, 500);
+      if (!team) return json({ error: "Team not found." }, 404);
+      if (team.created_by !== user.id && membership?.role !== "admin") {
+        return json({ error: "Only a Team administrator can view the member list." }, 403);
+      }
+      const { data: rows, error: membersError } = await admin
+        .from("team_members")
+        .select("user_id,role,joined_at")
+        .eq("team_id", teamId)
+        .order("joined_at", { ascending: true });
+      if (membersError) return json({ error: membersError.message }, 500);
+      const members = await Promise.all((rows ?? []).map(async (row) => {
+        const { data } = await admin.auth.admin.getUserById(row.user_id);
+        const fullName = typeof data.user?.user_metadata?.full_name === "string"
+          ? data.user.user_metadata.full_name.trim().slice(0, 100)
+          : "";
+        return { user_id: row.user_id, name: fullName, email: data.user?.email ?? "Unknown member", role: row.role, joined_at: row.joined_at };
+      }));
+      return json({ members });
+    }
+
+    if (action === "remove_member") {
+      const teamId = String(body?.team_id ?? "");
+      const memberId = String(body?.user_id ?? "");
+      if (!uuidPattern.test(teamId) || !uuidPattern.test(memberId)) return json({ error: "Invalid Team member" }, 400);
+      const [{ data: team, error: teamError }, { data: membership, error: membershipError }] = await Promise.all([
+        admin.from("teams").select("created_by").eq("id", teamId).maybeSingle(),
+        admin.from("team_members").select("role").eq("team_id", teamId).eq("user_id", user.id).maybeSingle(),
+      ]);
+      if (teamError || membershipError) return json({ error: "Could not verify Team permissions." }, 500);
+      if (!team) return json({ error: "Team not found." }, 404);
+      if (team.created_by !== user.id && membership?.role !== "admin") {
+        return json({ error: "Only a Team administrator can remove members." }, 403);
+      }
+      if (memberId === user.id) return json({ error: "You cannot remove yourself here." }, 400);
+      if (memberId === team.created_by) return json({ error: "The Team creator cannot be removed." }, 400);
+
+      const revokePersonalShares = body?.revoke_personal_shares !== false;
+      let revokedPersonalShares = 0;
+
+      // Membership is the source of truth for all Team-customer access. The database
+      // trigger also removes any redundant per-customer Team grants on deletion.
+      const { error: removeError } = await admin.from("team_members").delete().eq("team_id", teamId).eq("user_id", memberId);
+      if (removeError) return json({ error: removeError.message }, 500);
+
+      if (revokePersonalShares) {
+        // Revoke only Personal customers owned by the administrator performing this
+        // removal. Do not touch shares from other owners or any other Team.
+        const { data: personalCustomers, error: personalCustomerError } = await admin
+          .from("customers")
+          .select("id")
+          .eq("user_id", user.id)
+          .is("team_id", null);
+        if (personalCustomerError) return json({ error: personalCustomerError.message }, 500);
+
+        const personalCustomerIds = (personalCustomers ?? []).map((row) => row.id);
+        if (personalCustomerIds.length > 0) {
+          const { data: revokedRows, error: revokeError } = await admin
+            .from("customer_shares")
+            .delete()
+            .eq("shared_with_user_id", memberId)
+            .in("customer_id", personalCustomerIds)
+            .select("id");
+          if (revokeError) return json({ error: revokeError.message }, 500);
+          revokedPersonalShares = revokedRows?.length ?? 0;
+        }
+      }
+
+      return json({ ok: true, revoked_personal_shares: revokedPersonalShares });
+    }
+
     if (action === "create") {
       const teamId = String(body?.team_id ?? "");
       const email = String(body?.email ?? "").trim().toLowerCase();
