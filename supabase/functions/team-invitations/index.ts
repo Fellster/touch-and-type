@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
           const { data: revokedRows, error: revokeError } = await admin
             .from("customer_shares")
             .delete()
-            .eq("shared_with_user_id", memberId)
+            .eq("recipient_user_id", memberId)
             .in("customer_id", personalCustomerIds)
             .select("id");
           if (revokeError) return json({ error: revokeError.message }, 500);
