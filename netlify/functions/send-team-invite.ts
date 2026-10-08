@@ -64,16 +64,20 @@ export const handler: Handler = async (event) => {
     return json(403, { error: "Only a Team administrator can email invitations." });
   }
 
-  const { data: invitation } = await supabase
+  const { data: invitation, error: invitationError } = await supabase
     .from("team_invitations")
     .select("id")
     .eq("team_id", teamId)
     .eq("email", email)
     .eq("invited_by", userData.user.id)
     .eq("token_hash", tokenHash)
-    .is("used_at", null)
+    .is("accepted_at", null)
     .gt("expires_at", new Date().toISOString())
     .maybeSingle();
+  if (invitationError) {
+    console.error("Invitation verification failed", invitationError);
+    return json(500, { error: "The invitation was created, but its email could not be verified." });
+  }
   if (!invitation) return json(403, { error: "This invitation could not be verified." });
 
   const transporter = nodemailer.createTransport({
