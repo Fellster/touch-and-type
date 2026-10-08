@@ -4,6 +4,7 @@ import { ArrowLeft, Copy, Mail, Plus, ShieldCheck, Trash2, UserRound, Users } fr
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import SEO from "@/components/SEO";
@@ -26,6 +27,7 @@ export default function Workspaces() {
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [teamMembers, setTeamMembers] = useState<Record<string, TeamMember[]>>({});
   const [removeMember, setRemoveMember] = useState<{ team_id: string; member: TeamMember } | null>(null);
+  const [revokePersonalShares, setRevokePersonalShares] = useState(true);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [teamName, setTeamName] = useState("");
@@ -162,11 +164,17 @@ export default function Workspaces() {
     if (!removeMember) return;
     setWorking(true);
     const { data, error } = await supabase.functions.invoke("team-invitations", {
-      body: { action: "remove_member", team_id: removeMember.team_id, user_id: removeMember.member.user_id },
+      body: {
+        action: "remove_member",
+        team_id: removeMember.team_id,
+        user_id: removeMember.member.user_id,
+        revoke_personal_shares: revokePersonalShares,
+      },
     });
     setWorking(false);
     if (error || data?.error) return toast.error(await functionErrorMessage(error, data, "Could not remove this Team member."));
-    toast.success((removeMember.member.name || removeMember.member.email) + " removed");
+    const revokedCount = Number(data?.revoked_personal_shares ?? 0);
+    toast.success((removeMember.member.name || removeMember.member.email) + " removed" + (revokedCount > 0 ? `; ${revokedCount} Personal share${revokedCount === 1 ? "" : "s"} revoked` : ""));
     setRemoveMember(null);
     await loadTeams();
   };
@@ -222,7 +230,7 @@ export default function Workspaces() {
                     </div>
                     <span className="text-xs text-muted-foreground capitalize shrink-0">{member.role}</span>
                     {member.user_id !== user?.id && member.user_id !== membership.teams?.created_by && (
-                      <Button variant="ghost" size="icon" className="text-destructive shrink-0" onClick={() => setRemoveMember({ team_id: membership.team_id, member })} aria-label={`Remove ${member.name || member.email}`}>
+                      <Button variant="ghost" size="icon" className="text-destructive shrink-0" onClick={() => { setRevokePersonalShares(true); setRemoveMember({ team_id: membership.team_id, member }); }} aria-label={`Remove ${member.name || member.email}`}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     )}
@@ -290,6 +298,18 @@ export default function Workspaces() {
               {removeMember?.member.name || removeMember?.member.email} will immediately lose access to this Team and its customers. Their Personal customers and other Teams will not be affected.
             </DialogDescription>
           </DialogHeader>
+          <label className="flex items-start gap-3 rounded-lg border p-3 text-sm cursor-pointer">
+            <Checkbox
+              checked={revokePersonalShares}
+              onCheckedChange={(checked) => setRevokePersonalShares(checked === true)}
+              disabled={working}
+              className="mt-0.5"
+            />
+            <span>
+              <span className="font-medium block">Also remove my Personal customer shares</span>
+              <span className="text-muted-foreground">Revokes every Personal customer that you shared directly with this person. Customers owned by other people are not affected.</span>
+            </span>
+          </label>
           <DialogFooter>
             <Button type="button" variant="ghost" disabled={working} onClick={() => setRemoveMember(null)}>Cancel</Button>
             <Button type="button" variant="destructive" disabled={working} onClick={confirmRemoveMember}>{working ? "Removing…" : "Remove member"}</Button>
