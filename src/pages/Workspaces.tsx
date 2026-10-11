@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Copy, Mail, Plus, ShieldCheck, Trash2, UserRound, Users } from "lucide-react";
+import { ArrowLeft, Copy, Mail, Plus, Pencil, ShieldCheck, Trash2, UserRound, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -26,6 +26,9 @@ export default function Workspaces() {
   const { user } = useAuth();
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [teamMembers, setTeamMembers] = useState<Record<string, TeamMember[]>>({});
+  const [editMember, setEditMember] = useState<{ team_id: string; member: TeamMember } | null>(null);
+  const [memberName, setMemberName] = useState("");
+  const [rosterErrors, setRosterErrors] = useState<Record<string, string>>({});
   const [removeMember, setRemoveMember] = useState<{ team_id: string; member: TeamMember } | null>(null);
   const [deleteTeam, setDeleteTeam] = useState<Membership | null>(null);
   const [deleteTeamName, setDeleteTeamName] = useState("");
@@ -62,18 +65,21 @@ export default function Workspaces() {
     const { data, error } = await db
       .from("team_members")
       .select("team_id,role,teams(id,name,created_by)")
+      .eq("user_id", user?.id)
       .order("joined_at", { ascending: true });
     if (error) toast.error(error.message);
     const nextMemberships = (data ?? []) as Membership[];
     setMemberships(nextMemberships);
-    const adminTeams = nextMemberships.filter((membership) => membership.role === "admin");
-    const memberResults = await Promise.all(adminTeams.map(async (membership) => {
+    const errors: Record<string, string> = {};
+    const memberResults = await Promise.all(nextMemberships.map(async (membership) => {
       const result = await supabase.functions.invoke("team-invitations", {
         body: { action: "list_members", team_id: membership.team_id },
       });
+      if (result.error || result.data?.error) errors[membership.team_id] = await functionErrorMessage(result.error, result.data, "Could not load members.");
       return [membership.team_id, (result.data?.members ?? []) as TeamMember[]] as const;
     }));
     setTeamMembers(Object.fromEntries(memberResults));
+    setRosterErrors(errors);
     setLoading(false);
   };
 
@@ -160,6 +166,20 @@ export default function Workspaces() {
   const copy = async (value: string, label: string) => {
     await navigator.clipboard.writeText(value);
     toast.success(label + " copied");
+  };
+
+  const saveMemberName = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editMember || !memberName.trim()) return;
+    setWorking(true);
+    const { data, error } = await supabase.functions.invoke("team-invitations", {
+      body: { action: "rename_member", team_id: editMember.team_id, user_id: editMember.member.user_id, name: memberName.trim() },
+    });
+    setWorking(false);
+    if (error || data?.error) return toast.error(await functionErrorMessage(error, data, "Could not save this name."));
+    setEditMember(null);
+    toast.success("Name saved");
+    await loadTeams();
   };
 
   const confirmRemoveMember = async () => {
@@ -249,9 +269,10 @@ export default function Workspaces() {
                 </>
               )}
             </div>
-            {membership.role === "admin" && teamMembers[membership.team_id] && (
+            {teamMembers[membership.team_id] && (
               <div className="mt-4 border-t pt-3 space-y-2">
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Members</p>
+                {rosterErrors[membership.team_id] && <p role="alert" className="text-sm text-destructive">{rosterErrors[membership.team_id]} <Button variant="link" onClick={loadTeams}>Retry</Button></p>}
                 {teamMembers[membership.team_id].map((member) => (
                   <div key={member.user_id} className="flex items-center justify-between gap-3 text-sm">
                     <div className="min-w-0">
@@ -259,7 +280,8 @@ export default function Workspaces() {
                       <p className="text-xs text-muted-foreground truncate">{member.email}</p>
                     </div>
                     <span className="text-xs text-muted-foreground capitalize shrink-0">{member.role}</span>
-                    {member.user_id !== user?.id && member.user_id !== membership.teams?.created_by && (
+                    {membership.role === "admin" && <Button variant="ghost" size="icon" className="shrink-0" onClick={() => { setEditMember({ team_id: membership.team_id, member }); setMemberName(member.name || member.email.split("@")[0]); }} aria-label={`Edit name for ${member.name || member.email}`}><Pencil className="h-4 w-4" /></Button>}
+                    {membership.role === "admin" && member.user_id !== user?.id && member.user_id !== membership.teams?.created_by && (
                       <Button variant="ghost" size="icon" className="text-destructive shrink-0" onClick={() => { setRevokePersonalShares(true); setRemoveMember({ team_id: membership.team_id, member }); }} aria-label={`Remove ${member.name || member.email}`}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -349,6 +371,16 @@ export default function Workspaces() {
               {working ? "Deleting…" : "Delete team"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(editMember)} onOpenChange={(open) => !open && !working && setEditMember(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Edit member name</DialogTitle><DialogDescription>This name appears to everyone on this team.</DialogDescription></DialogHeader>
+          <form onSubmit={saveMemberName} className="space-y-4">
+            <Input value={memberName} onChange={(event) => setMemberName(event.target.value)} aria-label="Member name" placeholder="Member name" autoFocus maxLength={100} disabled={working} />
+            <DialogFooter><Button type="button" variant="ghost" disabled={working} onClick={() => setEditMember(null)}>Cancel</Button><Button type="submit" disabled={working || !memberName.trim()}>{working ? "Saving…" : "Save"}</Button></DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
