@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Copy, Mail, Plus, ShieldCheck, Trash2, UserRound, Users } from "lucide-react";
+import { ArrowLeft, Copy, Mail, Plus, Pencil, ShieldCheck, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -26,7 +26,12 @@ export default function Workspaces() {
   const { user } = useAuth();
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [teamMembers, setTeamMembers] = useState<Record<string, TeamMember[]>>({});
+  const [editMember, setEditMember] = useState<{ team_id: string; member: TeamMember } | null>(null);
+  const [memberName, setMemberName] = useState("");
+  const [rosterErrors, setRosterErrors] = useState<Record<string, string>>({});
   const [removeMember, setRemoveMember] = useState<{ team_id: string; member: TeamMember } | null>(null);
+  const [deleteTeam, setDeleteTeam] = useState<Membership | null>(null);
+  const [deleteTeamName, setDeleteTeamName] = useState("");
   const [revokePersonalShares, setRevokePersonalShares] = useState(true);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -60,18 +65,21 @@ export default function Workspaces() {
     const { data, error } = await db
       .from("team_members")
       .select("team_id,role,teams(id,name,created_by)")
+      .eq("user_id", user?.id)
       .order("joined_at", { ascending: true });
     if (error) toast.error(error.message);
     const nextMemberships = (data ?? []) as Membership[];
     setMemberships(nextMemberships);
-    const adminTeams = nextMemberships.filter((membership) => membership.role === "admin");
-    const memberResults = await Promise.all(adminTeams.map(async (membership) => {
+    const errors: Record<string, string> = {};
+    const memberResults = await Promise.all(nextMemberships.map(async (membership) => {
       const result = await supabase.functions.invoke("team-invitations", {
         body: { action: "list_members", team_id: membership.team_id },
       });
+      if (result.error || result.data?.error) errors[membership.team_id] = await functionErrorMessage(result.error, result.data, "Could not load members.");
       return [membership.team_id, (result.data?.members ?? []) as TeamMember[]] as const;
     }));
     setTeamMembers(Object.fromEntries(memberResults));
+    setRosterErrors(errors);
     setLoading(false);
   };
 
@@ -160,6 +168,20 @@ export default function Workspaces() {
     toast.success(label + " copied");
   };
 
+  const saveMemberName = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editMember || !memberName.trim()) return;
+    setWorking(true);
+    const { data, error } = await supabase.functions.invoke("team-invitations", {
+      body: { action: "rename_member", team_id: editMember.team_id, user_id: editMember.member.user_id, name: memberName.trim() },
+    });
+    setWorking(false);
+    if (error || data?.error) return toast.error(await functionErrorMessage(error, data, "Could not save this name."));
+    setEditMember(null);
+    toast.success("Name saved");
+    await loadTeams();
+  };
+
   const confirmRemoveMember = async () => {
     if (!removeMember) return;
     setWorking(true);
@@ -176,6 +198,24 @@ export default function Workspaces() {
     const revokedCount = Number(data?.revoked_personal_shares ?? 0);
     toast.success((removeMember.member.name || removeMember.member.email) + " removed" + (revokedCount > 0 ? `; ${revokedCount} Personal share${revokedCount === 1 ? "" : "s"} revoked` : ""));
     setRemoveMember(null);
+    await loadTeams();
+  };
+
+  const confirmDeleteTeam = async () => {
+    if (!deleteTeam || deleteTeamName.trim() !== deleteTeam.teams?.name) return;
+    setWorking(true);
+    const { data, error } = await supabase.functions.invoke("team-invitations", {
+      body: { action: "delete_team", team_id: deleteTeam.team_id },
+    });
+    setWorking(false);
+    if (error || data?.error) {
+      const message = await functionErrorMessage(error, data, "Could not delete this Team.");
+      toast.error(message, { action: { label: "View team customers", onClick: () => nav(`/customers?workspace=${deleteTeam.team_id}`) } });
+      return;
+    }
+    toast.success((deleteTeam.teams?.name ?? "Team") + " deleted");
+    setDeleteTeam(null);
+    setDeleteTeamName("");
     await loadTeams();
   };
 
@@ -197,16 +237,11 @@ export default function Workspaces() {
       <SEO title="Workspaces — Noted" description="Manage Personal and Team customer workspaces." path="/workspaces" />
       <header className="px-5 pt-6 max-w-2xl mx-auto flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => nav("/settings")} aria-label="Back to settings"><ArrowLeft className="h-5 w-5" /></Button>
-        <div className="flex-1"><h1 className="font-serif text-2xl">Workspaces</h1><p className="text-xs text-muted-foreground">Customer ownership and access</p></div>
+        <div className="flex-1"><h1 className="font-serif text-2xl">Workspaces</h1></div>
         <Button size="sm" onClick={() => setCreating(true)}><Plus className="h-4 w-4 mr-1" />Create team</Button>
       </header>
 
       <section className="px-5 max-w-2xl mx-auto mt-6 space-y-3">
-        <Card className="p-4 flex items-start gap-3 border-primary/30">
-          <UserRound className="h-5 w-5 text-primary mt-0.5" />
-          <div><h2 className="font-medium">Personal</h2><p className="text-sm text-muted-foreground mt-1">Your private customer workspace. Existing customers stay here automatically.</p></div>
-        </Card>
-
         <div className="pt-3 flex items-center justify-between"><h2 className="font-serif text-xl">Your teams</h2><span className="text-xs text-muted-foreground">{memberships.length} total</span></div>
         {loading ? <p className="text-center text-muted-foreground py-8">Loading…</p> : memberships.length === 0 ? (
           <Card className="p-6 text-center"><Users className="h-8 w-8 mx-auto text-muted-foreground" /><p className="font-medium mt-3">You are not on a team yet</p><p className="text-sm text-muted-foreground mt-1">Create a team or accept an invitation.</p></Card>
@@ -216,20 +251,37 @@ export default function Workspaces() {
               <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center"><Users className="h-5 w-5" /></div>
               <div className="flex-1 min-w-0"><p className="font-medium truncate">{membership.teams?.name ?? "Team"}</p><p className="text-xs text-muted-foreground capitalize">{membership.role}</p></div>
               {membership.role === "admin" && (
-                <><ShieldCheck className="h-5 w-5 text-primary" aria-label="Administrator" /><Button variant="outline" size="sm" onClick={() => setInviteTeam(membership)}>Invite</Button></>
+                <>
+                  <ShieldCheck className="h-5 w-5 text-primary" aria-label="Administrator" />
+                  <Button variant="outline" size="sm" onClick={() => setInviteTeam(membership)}>Invite</Button>
+                  {membership.teams?.created_by === user?.id && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive"
+                      onClick={() => { setDeleteTeamName(""); setDeleteTeam(membership); }}
+                      aria-label={`Delete ${membership.teams?.name ?? "Team"}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </>
               )}
             </div>
-            {membership.role === "admin" && teamMembers[membership.team_id] && (
+            {teamMembers[membership.team_id] && (
               <div className="mt-4 border-t pt-3 space-y-2">
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Members</p>
+                {rosterErrors[membership.team_id] && <p role="alert" className="text-sm text-destructive">{rosterErrors[membership.team_id]} <Button variant="link" onClick={loadTeams}>Retry</Button></p>}
                 {teamMembers[membership.team_id].map((member) => (
                   <div key={member.user_id} className="flex items-center justify-between gap-3 text-sm">
-                    <div className="min-w-0">
+                    {(membership.role === "admin" || member.user_id === user?.id) && <Button variant="ghost" size="icon" className="shrink-0" onClick={() => { setEditMember({ team_id: membership.team_id, member }); setMemberName(member.name || member.email.split("@")[0]); }} aria-label={`Edit name for ${member.name || member.email}`}><Pencil className="h-4 w-4" /></Button>}
+                    {membership.role !== "admin" && member.user_id !== user?.id && <span className="h-10 w-10 shrink-0" aria-hidden="true" />}
+                    <div className="min-w-0 flex-1">
                       <p className="font-medium truncate">{member.name || member.email.split("@")[0]}</p>
                       <p className="text-xs text-muted-foreground truncate">{member.email}</p>
                     </div>
                     <span className="text-xs text-muted-foreground capitalize shrink-0">{member.role}</span>
-                    {member.user_id !== user?.id && member.user_id !== membership.teams?.created_by && (
+                    {membership.role === "admin" && member.user_id !== user?.id && member.user_id !== membership.teams?.created_by && (
                       <Button variant="ghost" size="icon" className="text-destructive shrink-0" onClick={() => { setRevokePersonalShares(true); setRemoveMember({ team_id: membership.team_id, member }); }} aria-label={`Remove ${member.name || member.email}`}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -287,6 +339,49 @@ export default function Workspaces() {
               <Button variant="ghost" onClick={closeInvitation}>Done</Button>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(deleteTeam)} onOpenChange={(open) => { if (!open && !working) { setDeleteTeam(null); setDeleteTeamName(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete {deleteTeam?.teams?.name ?? "Team"}?</DialogTitle>
+            <DialogDescription>
+              This removes the Team, its memberships, and pending invitations. Noted will block deletion if the Team still has customers.
+            </DialogDescription>
+          </DialogHeader>
+          <Button variant="outline" disabled={working} onClick={() => nav(`/customers?workspace=${deleteTeam?.team_id}`)}>View team customers</Button>
+          <div className="space-y-2">
+            <p className="text-sm">Type <span className="font-medium">{deleteTeam?.teams?.name}</span> to confirm.</p>
+            <Input
+              value={deleteTeamName}
+              onChange={(event) => setDeleteTeamName(event.target.value)}
+              placeholder="Team name"
+              aria-label="Confirm Team name"
+              autoComplete="off"
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="ghost" disabled={working} onClick={() => { setDeleteTeam(null); setDeleteTeamName(""); }}>Cancel</Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={working || deleteTeamName.trim() !== deleteTeam?.teams?.name}
+              onClick={confirmDeleteTeam}
+            >
+              {working ? "Deleting…" : "Delete team"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(editMember)} onOpenChange={(open) => !open && !working && setEditMember(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Edit member name</DialogTitle><DialogDescription>This name appears to everyone on this team.</DialogDescription></DialogHeader>
+          <form onSubmit={saveMemberName} className="space-y-4">
+            <Input value={memberName} onChange={(event) => setMemberName(event.target.value)} aria-label="Member name" placeholder="Member name" autoFocus maxLength={100} disabled={working} />
+            <DialogFooter><Button type="button" variant="ghost" disabled={working} onClick={() => setEditMember(null)}>Cancel</Button><Button type="submit" disabled={working || !memberName.trim()}>{working ? "Saving…" : "Save"}</Button></DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 

@@ -56,12 +56,12 @@ Deno.serve(async (req) => {
       ]);
       if (teamError || membershipError) return json({ error: "Could not verify Team permissions." }, 500);
       if (!team) return json({ error: "Team not found." }, 404);
-      if (team.created_by !== user.id && membership?.role !== "admin") {
-        return json({ error: "Only a Team administrator can view the member list." }, 403);
+      if (!membership) {
+        return json({ error: "Only current Team members can view the member list." }, 403);
       }
       const { data: rows, error: membersError } = await admin
         .from("team_members")
-        .select("user_id,role,joined_at")
+        .select("user_id,role,joined_at,display_name")
         .eq("team_id", teamId)
         .order("joined_at", { ascending: true });
       if (membersError) return json({ error: membersError.message }, 500);
@@ -70,9 +70,26 @@ Deno.serve(async (req) => {
         const fullName = typeof data.user?.user_metadata?.full_name === "string"
           ? data.user.user_metadata.full_name.trim().slice(0, 100)
           : "";
-        return { user_id: row.user_id, name: fullName, email: data.user?.email ?? "Unknown member", role: row.role, joined_at: row.joined_at };
+        return { user_id: row.user_id, name: row.display_name || fullName, email: data.user?.email ?? "Unknown member", role: row.role, joined_at: row.joined_at };
       }));
       return json({ members });
+    }
+
+    if (action === "rename_member") {
+      const teamId = String(body?.team_id ?? "");
+      const memberId = String(body?.user_id ?? "");
+      const name = typeof body?.name === "string" ? body.name.trim() : "";
+      if (!uuidPattern.test(teamId) || !uuidPattern.test(memberId)) return json({ error: "Invalid Team member" }, 400);
+      if (!name || name.length > 100) return json({ error: "Enter a name between 1 and 100 characters." }, 400);
+      const { data: membership, error: permissionError } = await admin.from("team_members")
+        .select("role").eq("team_id", teamId).eq("user_id", user.id).maybeSingle();
+      if (permissionError) return json({ error: "Could not verify Team permissions." }, 500);
+      if (!membership || (membership.role !== "admin" && memberId !== user.id)) return json({ error: "You can only change your own name. Administrators can change any member name." }, 403);
+      const { data: updated, error } = await admin.from("team_members")
+        .update({ display_name: name }).eq("team_id", teamId).eq("user_id", memberId).select("user_id").maybeSingle();
+      if (error) return json({ error: error.message }, 500);
+      if (!updated) return json({ error: "Team member not found." }, 404);
+      return json({ ok: true });
     }
 
     if (action === "remove_member") {
@@ -123,6 +140,37 @@ Deno.serve(async (req) => {
       }
 
       return json({ ok: true, revoked_personal_shares: revokedPersonalShares });
+    }
+
+    if (action === "delete_team") {
+      const teamId = String(body?.team_id ?? "");
+      if (!uuidPattern.test(teamId)) return json({ error: "Invalid Team" }, 400);
+
+      const { data: team, error: teamError } = await admin
+        .from("teams")
+        .select("id,name,created_by")
+        .eq("id", teamId)
+        .maybeSingle();
+      if (teamError) return json({ error: "Could not verify Team ownership." }, 500);
+      if (!team) return json({ error: "Team not found." }, 404);
+      if (team.created_by !== user.id) {
+        return json({ error: "Only the person who created this Team can delete it." }, 403);
+      }
+
+      const { count: customerCount, error: customerError } = await admin
+        .from("customers")
+        .select("id", { count: "exact", head: true })
+        .eq("team_id", teamId);
+      if (customerError) return json({ error: customerError.message }, 500);
+      if ((customerCount ?? 0) > 0) {
+        return json({ error: "Move or delete this Team's customers before deleting the Team." }, 409);
+      }
+
+      // Memberships and pending invitations cascade. The customer foreign key
+      // uses RESTRICT, providing a final database safeguard against data loss.
+      const { error: deleteError } = await admin.from("teams").delete().eq("id", teamId);
+      if (deleteError) return json({ error: deleteError.message }, 500);
+      return json({ ok: true, deleted_team: team.name });
     }
 
     if (action === "create") {
