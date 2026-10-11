@@ -275,12 +275,12 @@ export default function Workspaces() {
                 {rosterErrors[membership.team_id] && <p role="alert" className="text-sm text-destructive">{rosterErrors[membership.team_id]} <Button variant="link" onClick={loadTeams}>Retry</Button></p>}
                 {teamMembers[membership.team_id].map((member) => (
                   <div key={member.user_id} className="flex items-center justify-between gap-3 text-sm">
-                    <div className="min-w-0">
+                    {membership.role === "admin" && <Button variant="ghost" size="icon" className="shrink-0" onClick={() => { setEditMember({ team_id: membership.team_id, member }); setMemberName(member.name || member.email.split("@")[0]); }} aria-label={`Edit name for ${member.name || member.email}`}><Pencil className="h-4 w-4" /></Button>}
+                    <div className="min-w-0 flex-1">
                       <p className="font-medium truncate">{member.name || member.email.split("@")[0]}</p>
                       <p className="text-xs text-muted-foreground truncate">{member.email}</p>
                     </div>
                     <span className="text-xs text-muted-foreground capitalize shrink-0">{member.role}</span>
-                    {membership.role === "admin" && <Button variant="ghost" size="icon" className="shrink-0" onClick={() => { setEditMember({ team_id: membership.team_id, member }); setMemberName(member.name || member.email.split("@")[0]); }} aria-label={`Edit name for ${member.name || member.email}`}><Pencil className="h-4 w-4" /></Button>}
                     {membership.role === "admin" && member.user_id !== user?.id && member.user_id !== membership.teams?.created_by && (
                       <Button variant="ghost" size="icon" className="text-destructive shrink-0" onClick={() => { setRevokePersonalShares(true); setRemoveMember({ team_id: membership.team_id, member }); }} aria-label={`Remove ${member.name || member.email}`}>
                         <Trash2 className="h-4 w-4" />
