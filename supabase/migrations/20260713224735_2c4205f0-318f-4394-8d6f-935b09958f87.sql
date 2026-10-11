@@ -8,6 +8,7 @@ CREATE TABLE public.todos (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+REVOKE ALL ON public.todos FROM anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.todos TO authenticated;
 GRANT ALL ON public.todos TO service_role;
 ALTER TABLE public.todos ENABLE ROW LEVEL SECURITY;
