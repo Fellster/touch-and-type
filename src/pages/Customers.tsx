@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, ArrowUpDown, Pencil, Plus, Search, User } from "lucide-react";
@@ -73,7 +75,13 @@ function CustomersInner() {
   const [searchParams] = useSearchParams();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState(searchParams.get("workspace") || "all");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [moving, setMoving] = useState(false);
+  const [moveDestination, setMoveDestination] = useState("personal");
+  const [moveOwner, setMoveOwner] = useState("");
+  const [moveMembers, setMoveMembers] = useState<{user_id:string;name:string;email:string}[]>([]);
+  const [busy, setBusy] = useState(false);
   const [destination, setDestination] = useState("personal");
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<SortOption>("updated_desc");
@@ -89,7 +97,7 @@ function CustomersInner() {
     if (!user) return;
     setLoading(true);
     const [{ data: membershipData, error: membershipError }, { data: customerData, error: customerError }, { data: personalShares }, { data: teamAccess }] = await Promise.all([
-      db.from("team_members").select("team_id,role,teams(id,name)").order("joined_at"),
+      db.from("team_members").select("team_id,role,teams(id,name)").eq("user_id", user.id).order("joined_at"),
       db.from("customers").select("id,name,phone,email,designers,looking_for,shoe_size,updated_at,user_id,team_id,teams(name)").order("updated_at", { ascending: false }),
       db.from("customer_shares").select("customer_id,permission").eq("recipient_user_id", user.id),
       db.from("team_customer_access").select("customer_id,permission").eq("user_id", user.id),
@@ -128,6 +136,35 @@ function CustomersInner() {
     list.sort((a, b) => sort === "customer_asc" ? a.name.localeCompare(b.name) : sort === "customer_desc" ? b.name.localeCompare(a.name) : new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
     return list;
   }, [customers, q, sort, filter]);
+
+  const canMove = workspaces.some((workspace) => workspace.id === filter && workspace.role === "admin");
+  useEffect(() => { setSelected([]); }, [filter]);
+  useEffect(() => {
+    if (!moving) return;
+    let cancelled = false;
+    setMoveOwner(""); setMoveMembers([]);
+    const teamId = moveDestination === "personal" ? filter : moveDestination;
+    supabase.functions.invoke("team-invitations", { body: { action: "list_members", team_id: teamId } }).then(({ data, error }) => {
+      if (cancelled) return;
+      if (error || data?.error) { toast.error(data?.error || "Could not load destination members."); return; }
+      setMoveMembers(data.members || []);
+    });
+    return () => { cancelled = true; };
+  }, [moving, moveDestination, filter]);
+
+  const moveSelected = async () => {
+    if (!moveOwner || !canMove || !selected.length) return;
+    setBusy(true);
+    const { data, error } = await supabase.functions.invoke("move-team-customers", { body: { source_team_id: filter, customer_ids: selected, destination_team_id: moveDestination === "personal" ? null : moveDestination, owner_id: moveOwner } });
+    setBusy(false);
+    if (error || data?.error) {
+      let message = data?.error || "Could not move customers.";
+      try { const response = (error as any)?.context; if (response) message = (await response.clone().json()).error || message; } catch { /* use fallback */ }
+      toast.error(message); return;
+    }
+    toast.success(`${data.moved} customer${data.moved === 1 ? "" : "s"} moved`);
+    setMoving(false); setSelected([]); await load();
+  };
 
   const destinationName = destination === "personal" ? "Personal" : workspaces.find((workspace) => workspace.id === destination)?.name ?? "Team";
 
@@ -229,15 +266,32 @@ function CustomersInner() {
       </section>
 
       <section className="px-5 max-w-2xl mx-auto mt-4 space-y-2">
+        {canMove && <div className="flex items-center justify-between gap-2">
+          <Button variant="outline" size="sm" onClick={() => setSelected(results.length && results.every((customer) => selected.includes(customer.id)) ? [] : results.slice(0,100).map((customer) => customer.id))}>Select visible</Button>
+          <Button size="sm" disabled={!selected.length} onClick={() => { setMoveDestination("personal"); setMoving(true); }}>Move selected ({selected.length})</Button>
+        </div>}
         {loading ? <p className="text-center text-muted-foreground py-12">Loading…</p> : results.length === 0 ? <p className="text-center text-muted-foreground py-12">{customers.length === 0 ? "No customers yet." : "No matches."}</p> : results.map((customer) => (
-          <CustomerRow key={customer.id} c={customer} onOpen={() => nav(`/c/${customer.id}`)} onRename={async (name) => {
+          <div key={customer.id} className="flex items-center gap-2">
+          {canMove && <Checkbox aria-label={`Select ${customer.name}`} checked={selected.includes(customer.id)} onCheckedChange={(checked) => setSelected((ids) => checked ? ids.length < 100 ? [...ids, customer.id] : ids : ids.filter((id) => id !== customer.id))} />}
+          <div className="flex-1 min-w-0"><CustomerRow c={customer} onOpen={() => nav(`/c/${customer.id}`)} onRename={async (name) => {
             const previous = customers;
             setCustomers((items) => items.map((item) => item.id === customer.id ? { ...item, name } : item));
             const { error } = await db.from("customers").update({ name }).eq("id", customer.id);
             if (error) { toast.error(error.message); setCustomers(previous); }
-          }} />
+          }} /></div></div>
         ))}
       </section>
+      <Dialog open={moving} onOpenChange={(open) => !busy && setMoving(open)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Move {selected.length} customer{selected.length === 1 ? "" : "s"}</DialogTitle><DialogDescription>Old Team access and existing customer shares will be removed. Destination administrators can view the customer and existing member additions. Personal notes and media keep their authors and follow the destination’s visibility rules.</DialogDescription></DialogHeader>
+          <label className="text-sm font-medium">Destination</label>
+          <Select value={moveDestination} onValueChange={setMoveDestination} disabled={busy}><SelectTrigger aria-label="Move destination"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="personal">Personal</SelectItem>{workspaces.filter((workspace) => workspace.role === "admin" && workspace.id !== filter).map((workspace) => <SelectItem key={workspace.id} value={workspace.id}>{workspace.name}</SelectItem>)}</SelectContent></Select>
+          <label className="text-sm font-medium">{moveDestination === "personal" ? "New Personal owner" : "Responsible team member"}</label>
+          <Select value={moveOwner} onValueChange={setMoveOwner} disabled={busy || !moveMembers.length}><SelectTrigger aria-label="New customer owner"><SelectValue placeholder="Choose a person" /></SelectTrigger><SelectContent>{moveMembers.map((member) => <SelectItem key={member.user_id} value={member.user_id}>{member.name || member.email}</SelectItem>)}</SelectContent></Select>
+          <p className="text-sm text-muted-foreground">Customer records stay together. To-dos remain unchanged. Team recipients receive access only through the destination Team’s rules.</p>
+          <DialogFooter><Button variant="ghost" disabled={busy} onClick={() => setMoving(false)}>Cancel</Button><Button disabled={busy || !moveOwner} onClick={moveSelected}>{busy ? "Moving…" : "Confirm move"}</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

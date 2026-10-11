@@ -208,7 +208,11 @@ export default function Workspaces() {
       body: { action: "delete_team", team_id: deleteTeam.team_id },
     });
     setWorking(false);
-    if (error || data?.error) return toast.error(await functionErrorMessage(error, data, "Could not delete this Team."));
+    if (error || data?.error) {
+      const message = await functionErrorMessage(error, data, "Could not delete this Team.");
+      toast.error(message, { action: { label: "View team customers", onClick: () => nav(`/customers?workspace=${deleteTeam.team_id}`) } });
+      return;
+    }
     toast.success((deleteTeam.teams?.name ?? "Team") + " deleted");
     setDeleteTeam(null);
     setDeleteTeamName("");
@@ -346,6 +350,7 @@ export default function Workspaces() {
               This removes the Team, its memberships, and pending invitations. Noted will block deletion if the Team still has customers.
             </DialogDescription>
           </DialogHeader>
+          <Button variant="outline" disabled={working} onClick={() => nav(`/customers?workspace=${deleteTeam?.team_id}`)}>View team customers</Button>
           <div className="space-y-2">
             <p className="text-sm">Type <span className="font-medium">{deleteTeam?.teams?.name}</span> to confirm.</p>
             <Input
