@@ -1,0 +1,21 @@
+name: Migration permissions
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - 'scripts/check-migration-permissions.mjs'
+      - '.github/workflows/migration-permissions.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'scripts/check-migration-permissions.mjs'
+      - '.github/workflows/migration-permissions.yml'
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node scripts/check-migration-permissions.mjs
