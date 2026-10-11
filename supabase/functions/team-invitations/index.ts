@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
       const { data: membership, error: permissionError } = await admin.from("team_members")
         .select("role").eq("team_id", teamId).eq("user_id", user.id).maybeSingle();
       if (permissionError) return json({ error: "Could not verify Team permissions." }, 500);
-      if (membership?.role !== "admin") return json({ error: "Only a Team administrator can change member names." }, 403);
+      if (!membership || (membership.role !== "admin" && memberId !== user.id)) return json({ error: "You can only change your own name. Administrators can change any member name." }, 403);
       const { data: updated, error } = await admin.from("team_members")
         .update({ display_name: name }).eq("team_id", teamId).eq("user_id", memberId).select("user_id").maybeSingle();
       if (error) return json({ error: error.message }, 500);

@@ -27,7 +27,8 @@ describe("team roster", () => {
     expect(await screen.findByText("Amy")).toBeInTheDocument();
     expect(screen.getByText("Keith")).toBeInTheDocument();
     expect(mocks.eq).toHaveBeenCalledWith("user_id", "self");
-    expect(screen.queryByRole("button", { name: /Edit name/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit name for Keith" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Edit name for Amy" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Remove Amy/ })).not.toBeInTheDocument();
   });
 
