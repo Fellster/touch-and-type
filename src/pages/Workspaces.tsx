@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Copy, Mail, Plus, Pencil, ShieldCheck, Trash2, UserRound, Users } from "lucide-react";
+import { ArrowLeft, Copy, Mail, Plus, Pencil, ShieldCheck, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -233,16 +233,11 @@ export default function Workspaces() {
       <SEO title="Workspaces — Noted" description="Manage Personal and Team customer workspaces." path="/workspaces" />
       <header className="px-5 pt-6 max-w-2xl mx-auto flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => nav("/settings")} aria-label="Back to settings"><ArrowLeft className="h-5 w-5" /></Button>
-        <div className="flex-1"><h1 className="font-serif text-2xl">Workspaces</h1><p className="text-xs text-muted-foreground">Customer ownership and access</p></div>
+        <div className="flex-1"><h1 className="font-serif text-2xl">Workspaces</h1></div>
         <Button size="sm" onClick={() => setCreating(true)}><Plus className="h-4 w-4 mr-1" />Create team</Button>
       </header>
 
       <section className="px-5 max-w-2xl mx-auto mt-6 space-y-3">
-        <Card className="p-4 flex items-start gap-3 border-primary/30">
-          <UserRound className="h-5 w-5 text-primary mt-0.5" />
-          <div><h2 className="font-medium">Personal</h2><p className="text-sm text-muted-foreground mt-1">Your private customer workspace. Existing customers stay here automatically.</p></div>
-        </Card>
-
         <div className="pt-3 flex items-center justify-between"><h2 className="font-serif text-xl">Your teams</h2><span className="text-xs text-muted-foreground">{memberships.length} total</span></div>
         {loading ? <p className="text-center text-muted-foreground py-8">Loading…</p> : memberships.length === 0 ? (
           <Card className="p-6 text-center"><Users className="h-8 w-8 mx-auto text-muted-foreground" /><p className="font-medium mt-3">You are not on a team yet</p><p className="text-sm text-muted-foreground mt-1">Create a team or accept an invitation.</p></Card>

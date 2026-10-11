@@ -180,9 +180,6 @@ export default function Settings() {
           <Button className="w-full mt-4" onClick={() => nav("/workspaces")}>
             Manage workspaces
           </Button>
-          <Button variant="ghost" className="w-full mt-2" onClick={() => nav("/team-prototype")}>
-            View approved prototype
-          </Button>
         </Card>
       </section>
 
