@@ -1,0 +1,28 @@
+name: Fresh Supabase database
+on:
+  push:
+    branches: [review/launch-security]
+    paths:
+      - 'supabase/migrations/**'
+      - '.github/workflows/fresh-supabase.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.120.0
+      - name: Start isolated local Supabase
+        run: supabase start
+      - name: Replay every migration from an empty database
+        run: supabase db reset --local --no-seed
+      - name: Check explicit table permissions
+        run: node scripts/check-migration-permissions.mjs
+      - name: Stop isolated services
+        if: always()
+        run: supabase stop --no-backup
