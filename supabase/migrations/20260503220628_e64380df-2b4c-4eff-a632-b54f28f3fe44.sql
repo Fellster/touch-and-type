@@ -16,6 +16,9 @@ create table public.customers (
   updated_at timestamptz not null default now()
 );
 alter table public.customers enable row level security;
+revoke all on public.customers from anon;
+grant select, insert, update, delete on public.customers to authenticated;
+grant select, insert, update, delete on public.customers to service_role;
 
 create policy "owner read customers" on public.customers for select using (auth.uid() = user_id);
 create policy "owner insert customers" on public.customers for insert with check (auth.uid() = user_id);
@@ -37,6 +40,9 @@ create table public.custom_fields (
   unique (user_id, key)
 );
 alter table public.custom_fields enable row level security;
+revoke all on public.custom_fields from anon;
+grant select, insert, update, delete on public.custom_fields to authenticated;
+grant select, insert, update, delete on public.custom_fields to service_role;
 
 create policy "owner read fields" on public.custom_fields for select using (auth.uid() = user_id);
 create policy "owner insert fields" on public.custom_fields for insert with check (auth.uid() = user_id);
@@ -53,6 +59,9 @@ create table public.drawings (
   created_at timestamptz not null default now()
 );
 alter table public.drawings enable row level security;
+revoke all on public.drawings from anon;
+grant select, insert, update, delete on public.drawings to authenticated;
+grant select, insert, update, delete on public.drawings to service_role;
 
 create policy "owner read drawings" on public.drawings for select using (auth.uid() = user_id);
 create policy "owner insert drawings" on public.drawings for insert with check (auth.uid() = user_id);
@@ -70,6 +79,9 @@ create table public.photos (
   created_at timestamptz not null default now()
 );
 alter table public.photos enable row level security;
+revoke all on public.photos from anon;
+grant select, insert, update, delete on public.photos to authenticated;
+grant select, insert, update, delete on public.photos to service_role;
 
 create policy "owner read photos" on public.photos for select using (auth.uid() = user_id);
 create policy "owner insert photos" on public.photos for insert with check (auth.uid() = user_id);

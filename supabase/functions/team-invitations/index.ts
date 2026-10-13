@@ -221,28 +221,16 @@ Deno.serve(async (req) => {
       const column = token ? "token_hash" : "code_hash";
       const value = await hash(token || code);
 
-      const { data: invitation, error } = await admin
-        .from("team_invitations")
-        .select("id,team_id,email,role,expires_at,accepted_at,revoked_at")
-        .eq(column, value)
-        .maybeSingle();
-      if (error) return json({ error: error.message }, 500);
-      if (!invitation || invitation.revoked_at || invitation.accepted_at || new Date(invitation.expires_at) <= new Date()) {
-        return json({ error: "This invitation is invalid or has expired." }, 410);
+      const { data: teamId, error } = await admin.rpc("accept_team_invitation", {
+        _actor: user.id,
+        _hash: value,
+        _use_token: column === "token_hash",
+      });
+      if (error) {
+        const status = error.code === "P0002" ? 410 : error.code === "42501" ? 403 : error.code === "28000" ? 401 : 500;
+        return json({ error: error.message }, status);
       }
-      if ((user.email ?? "").toLowerCase() !== invitation.email.toLowerCase()) {
-        return json({ error: "Sign in with the email address that received this invitation." }, 403);
-      }
-
-      const { error: memberError } = await admin.from("team_members").upsert({
-        team_id: invitation.team_id,
-        user_id: user.id,
-        role: invitation.role,
-      }, { onConflict: "team_id,user_id" });
-      if (memberError) return json({ error: memberError.message }, 500);
-      const { error: acceptedError } = await admin.from("team_invitations").update({ accepted_at: new Date().toISOString() }).eq("id", invitation.id);
-      if (acceptedError) return json({ error: acceptedError.message }, 500);
-      return json({ team_id: invitation.team_id });
+      return json({ team_id: teamId });
     }
 
     if (action === "revoke") {
