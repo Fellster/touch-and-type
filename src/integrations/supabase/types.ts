@@ -93,6 +93,7 @@ export type Database = {
           name: string
           phone: string | null
           shoe_size: number | null
+          team_id: string | null
           typed_notes: string | null
           updated_at: string
           user_id: string
@@ -108,6 +109,7 @@ export type Database = {
           name: string
           phone?: string | null
           shoe_size?: number | null
+          team_id?: string | null
           typed_notes?: string | null
           updated_at?: string
           user_id: string
@@ -123,6 +125,7 @@ export type Database = {
           name?: string
           phone?: string | null
           shoe_size?: number | null
+          team_id?: string | null
           typed_notes?: string | null
           updated_at?: string
           user_id?: string

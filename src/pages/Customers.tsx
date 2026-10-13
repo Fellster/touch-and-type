@@ -186,7 +186,10 @@ function CustomersInner() {
       phone: newPhone.trim() || null,
       email: newEmail.trim() || null,
     }).select("id").single();
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success(newName.trim() + " added to " + destinationName);
     setNewName(""); setNewPhone(""); setNewEmail(""); setDuplicate(null); setAdding(false);
     nav(`/c/${data.id}`);
@@ -209,7 +212,10 @@ function CustomersInner() {
       width: customer?.width ?? null,
       typed_notes: customer?.notes ?? null,
     }).select("id").single();
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Customer added to " + destinationName);
     nav(`/c/${data.id}`);
   };

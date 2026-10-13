@@ -356,3 +356,8 @@ comment on column public.customers.team_id is
   'NULL means Personal. A value means the customer belongs to that Team. Existing rows remain Personal.';
 comment on table public.team_invitations is
   'Stores only a hash of the email-link or temporary-code token. Acceptance must be handled by a server-side function.';
+
+-- Create indexes only after their tables exist (fresh installations).
+create index if not exists teams_created_by_idx on public.teams(created_by);
+create index if not exists team_customer_access_granted_by_idx on public.team_customer_access(granted_by);
+create index if not exists team_invitations_invited_by_idx on public.team_invitations(invited_by);
