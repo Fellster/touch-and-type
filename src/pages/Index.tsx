@@ -28,6 +28,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import VoiceCapture, { type ParsedResult } from "@/components/VoiceCapture";
 import { getSessionTodoPrompt } from "@/lib/todoPrompts";
+import { applyTodoPositions } from "@/lib/todoOrder";
 import {
   Dialog,
   DialogContent,
@@ -392,7 +393,7 @@ export default function Index() {
       else if (d < endOfWeek) g.upcoming.push(t);
       else g.later.push(t);
     });
-    // each group already comes sorted by position from the query
+    // Keep state ordered by position after loading and optimistic drag updates.
     return g;
   }, [todos]);
 
@@ -416,10 +417,7 @@ export default function Index() {
     const updates = reordered.map((item, i) => ({ id: item.id, position: min + step * i }));
 
     // Optimistic update
-    setTodos((prev) => {
-      const map = new Map(updates.map((u) => [u.id, u.position]));
-      return prev.map((t) => (map.has(t.id) ? { ...t, position: map.get(t.id)! } : t));
-    });
+    setTodos((prev) => applyTodoPositions(prev, updates));
 
     // Persist
     const results = await Promise.all(
