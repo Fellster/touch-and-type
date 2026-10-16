@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Trash2, Plus, X, Camera, Pencil, Sparkles, Copy, Mail, Phone, ListTodo, Share2 } from "lucide-react";
 import { toast } from "sonner";
+import CustomerReadingView from "@/components/CustomerReadingView";
 import DrawingCanvas from "@/components/DrawingCanvas";
 import SEO from "@/components/SEO";
 import { useLabels } from "@/hooks/useSettings";
@@ -44,6 +45,7 @@ export default function CustomerDetail() {
   const { user } = useAuth();
   const nav = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [editing, setEditing] = useState(() => searchParams.get("new") === "1" || searchParams.get("edit") === "1");
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [fields, setFields] = useState<CustomField[]>([]);
   const [drawings, setDrawings] = useState<Drawing[]>([]);
@@ -57,7 +59,7 @@ export default function CustomerDetail() {
   const [savedCustomer, setSavedCustomer] = useState<Customer | null>(null);
   const [saving, setSaving] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
-  const [access, setAccess] = useState<"owner" | "edit" | "view">("owner");
+  const [access, setAccess] = useState<"owner" | "edit" | "view">("view");
   const canEdit = access !== "view";
   const isOwner = access === "owner";
   const [shares, setShares] = useState<Share[]>([]);
@@ -69,6 +71,17 @@ export default function CustomerDetail() {
   const [todoOpen, setTodoOpen] = useState(false);
   const [todoText, setTodoText] = useState("");
   const [todoDue, setTodoDue] = useState("");
+
+  const finishEditing = () => {
+    const mine = personalDetails.find((row) => row.user_id === user?.id);
+    const personalChanged = personalNotes !== (mine?.notes ?? "") || JSON.stringify(personalWants) !== JSON.stringify(mine?.wants ?? []);
+    if ((hasUnsavedChanges || personalChanged) && !confirm("Discard unsaved changes?")) return;
+    if (savedCustomer) setCustomer(savedCustomer);
+    setPersonalNotes(mine?.notes ?? "");
+    setPersonalWants(mine?.wants ?? []);
+    setShowCanvas(false);
+    setEditing(false);
+  };
 
   const openTodo = () => {
     setTodoText("");
@@ -243,12 +256,12 @@ export default function CustomerDetail() {
   useEffect(() => { load(); }, [id, user?.id]);
 
   useEffect(() => {
-    if (customer && searchParams.get("new") === "1" && customer.name === "New customer") {
+    if (editing && customer && searchParams.get("new") === "1" && customer.name === "New customer") {
       nameInputRef.current?.focus();
       nameInputRef.current?.select();
       setSearchParams({}, { replace: true });
     }
-  }, [customer, searchParams]);
+  }, [customer, searchParams, editing]);
 
   const update = (patch: Partial<Customer>) => {
     if (!customer) return;
@@ -386,12 +399,13 @@ export default function CustomerDetail() {
       />
       <div className="flex justify-between items-start mb-4">
         <Button variant="ghost" size="sm" onClick={() => nav("/")}><ArrowLeft className="h-4 w-4 mr-1" />Back</Button>
-        <div className="flex flex-col gap-2 items-end">
-          {isOwner && (
+        <div className="flex flex-wrap justify-end gap-2 items-center">
+          {editing ? <Button variant="outline" size="sm" onClick={finishEditing} disabled={saving || personalSaving}>Done</Button> : <Button variant="ghost" size="icon" onClick={() => setEditing(true)} aria-label="Edit or add customer information"><Pencil className="h-5 w-5" /></Button>}
+          {editing && isOwner && (
             <Button variant="ghost" size="sm" onClick={removeCustomer} aria-label="Delete this customer"><Trash2 className="h-4 w-4" /></Button>
           )}
           <Button variant="ghost" size="sm" onClick={openTodo} aria-label="Add to-do for this customer"><ListTodo className="h-4 w-4" /></Button>
-          {canEdit && (
+          {editing && canEdit && (
             <VoiceCapture context="customer" onCommit={applyVoice} variant="ghost" size="sm" title="Voice fill fields / append note" />
           )}
         </div>
@@ -431,6 +445,12 @@ export default function CustomerDetail() {
       </Dialog>
 
 
+      {!editing ? (
+        <CustomerReadingView customer={customer} fields={fields} labels={labels}
+          additions={personalDetails} userId={user?.id} members={teamMembers}
+          drawings={drawings} photos={photos} />
+      ) : (
+      <>
       <h1 className="sr-only">{customer.name || "Untitled customer"}</h1>
       <label htmlFor="customer-name" className="sr-only">Customer name</label>
       <Input
@@ -743,6 +763,8 @@ export default function CustomerDetail() {
           ))}
         </div>
       </section>
+      </>
+      )}
     </main>
   );
 }
