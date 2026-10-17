@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Trash2, Plus, X, Camera, Pencil, Sparkles, Copy, Mail, Phone, ListTodo, Share2 } from "lucide-react";
 import { toast } from "sonner";
+import CustomerReadingView from "@/components/CustomerReadingView";
 import DrawingCanvas from "@/components/DrawingCanvas";
 import SEO from "@/components/SEO";
 import { useLabels } from "@/hooks/useSettings";
@@ -44,6 +45,7 @@ export default function CustomerDetail() {
   const { user } = useAuth();
   const nav = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [editing, setEditing] = useState(() => searchParams.get("new") === "1" || searchParams.get("edit") === "1");
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [fields, setFields] = useState<CustomField[]>([]);
   const [drawings, setDrawings] = useState<Drawing[]>([]);
@@ -57,7 +59,7 @@ export default function CustomerDetail() {
   const [savedCustomer, setSavedCustomer] = useState<Customer | null>(null);
   const [saving, setSaving] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
-  const [access, setAccess] = useState<"owner" | "edit" | "view">("owner");
+  const [access, setAccess] = useState<"owner" | "edit" | "view">("view");
   const canEdit = access !== "view";
   const isOwner = access === "owner";
   const [shares, setShares] = useState<Share[]>([]);
@@ -69,6 +71,17 @@ export default function CustomerDetail() {
   const [todoOpen, setTodoOpen] = useState(false);
   const [todoText, setTodoText] = useState("");
   const [todoDue, setTodoDue] = useState("");
+
+  const finishEditing = () => {
+    const mine = personalDetails.find((row) => row.user_id === user?.id);
+    const personalChanged = personalNotes !== (mine?.notes ?? "") || JSON.stringify(personalWants) !== JSON.stringify(mine?.wants ?? []);
+    if ((hasUnsavedChanges || personalChanged) && !confirm("Discard unsaved changes?")) return;
+    if (savedCustomer) setCustomer(savedCustomer);
+    setPersonalNotes(mine?.notes ?? "");
+    setPersonalWants(mine?.wants ?? []);
+    setShowCanvas(false);
+    setEditing(false);
+  };
 
   const openTodo = () => {
     setTodoText("");
@@ -243,12 +256,12 @@ export default function CustomerDetail() {
   useEffect(() => { load(); }, [id, user?.id]);
 
   useEffect(() => {
-    if (customer && searchParams.get("new") === "1" && customer.name === "New customer") {
+    if (editing && customer && searchParams.get("new") === "1" && customer.name === "New customer") {
       nameInputRef.current?.focus();
       nameInputRef.current?.select();
       setSearchParams({}, { replace: true });
     }
-  }, [customer, searchParams]);
+  }, [customer, searchParams, editing]);
 
   const update = (patch: Partial<Customer>) => {
     if (!customer) return;
@@ -386,12 +399,13 @@ export default function CustomerDetail() {
       />
       <div className="flex justify-between items-start mb-4">
         <Button variant="ghost" size="sm" onClick={() => nav("/")}><ArrowLeft className="h-4 w-4 mr-1" />Back</Button>
-        <div className="flex flex-col gap-2 items-end">
-          {isOwner && (
+        <div className="flex flex-wrap justify-end gap-2 items-center">
+          {editing ? <Button variant="outline" size="sm" onClick={finishEditing} disabled={saving || personalSaving}>Done</Button> : <Button variant="ghost" size="icon" onClick={() => setEditing(true)} aria-label="Edit or add customer information"><Pencil className="h-5 w-5" /></Button>}
+          {editing && isOwner && (
             <Button variant="ghost" size="sm" onClick={removeCustomer} aria-label="Delete this customer"><Trash2 className="h-4 w-4" /></Button>
           )}
           <Button variant="ghost" size="sm" onClick={openTodo} aria-label="Add to-do for this customer"><ListTodo className="h-4 w-4" /></Button>
-          {canEdit && (
+          {editing && canEdit && (
             <VoiceCapture context="customer" onCommit={applyVoice} variant="ghost" size="sm" title="Voice fill fields / append note" />
           )}
         </div>
@@ -431,6 +445,12 @@ export default function CustomerDetail() {
       </Dialog>
 
 
+      {!editing ? (
+        <CustomerReadingView customer={customer} fields={fields} labels={labels}
+          additions={personalDetails} userId={user?.id} members={teamMembers}
+          drawings={drawings} photos={photos} />
+      ) : (
+      <>
       <h1 className="sr-only">{customer.name || "Untitled customer"}</h1>
       <label htmlFor="customer-name" className="sr-only">Customer name</label>
       <Input
@@ -473,7 +493,9 @@ export default function CustomerDetail() {
               <Button variant="outline" size="icon" asChild aria-label="Send email" disabled={!customer.email}><a href={customer.email ? `mailto:${customer.email}` : undefined}><Mail className="h-4 w-4" /></a></Button>
             </div>
           </div>
-          <div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="min-w-0">
             <Label htmlFor="cust-shoesize">{labels.shoe_size}</Label>
             <Input
               id="cust-shoesize"
@@ -483,7 +505,7 @@ export default function CustomerDetail() {
               onChange={(e) => update({ shoe_size: e.target.value === "" ? null : Number(e.target.value) })}
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <Label htmlFor="cust-width">{labels.width}</Label>
             <select
               id="cust-width"
@@ -518,6 +540,110 @@ export default function CustomerDetail() {
         )}
       </Card>
 
+      {isOwner && customer.team_id && personalDetails.some((row) => row.user_id !== user?.id) && (
+        <section className="mt-6">
+          <h2 className="font-serif text-2xl mb-2">Team member additions</h2>
+          <div className="space-y-3">
+            {personalDetails.filter((row) => row.user_id !== user?.id).map((row) => (
+              <Card key={row.user_id} className="p-4 space-y-2">
+                <p className="font-medium">{teamMembers.find((member) => member.user_id === row.user_id)?.email ?? "Team member"}</p>
+                {row.notes && <p className="text-sm whitespace-pre-wrap">{row.notes}</p>}
+                {row.wants.length > 0 && <p className="text-sm"><span className="text-muted-foreground">Wants:</span> {row.wants.join(" · ")}</p>}
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section className="mt-6">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="font-serif text-2xl">
+            <label htmlFor="cust-notes">Customer Notes</label>
+          </h2>
+          {canEdit && <VoiceCapture context="notes" onCommit={applyVoice} variant="outline" size="sm" title="Dictate note" />}
+        </div>
+        <Textarea
+          id="cust-notes"
+          value={customer.typed_notes ?? ""}
+          onChange={(e) => update({ typed_notes: e.target.value })}
+          readOnly={!canEdit}
+          placeholder={canEdit ? "Type any notes here…" : "View only"}
+          rows={6}
+        />
+      </section>
+
+      <section className="mt-6">
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="font-serif text-2xl">Drawings</h2>
+          {!showCanvas && user && (
+            <Button size="sm" onClick={() => setShowCanvas(true)} aria-label="Add new drawing">
+              <Pencil className="h-4 w-4 mr-1" />New
+            </Button>
+          )}
+        </div>
+        {showCanvas && (
+          <Card className="p-3 mb-3">
+            <DrawingCanvas
+              onSave={async (b) => { await saveDrawing(b); }}
+              onCancel={() => setShowCanvas(false)}
+              onOcr={saveAndTranscribe}
+            />
+          </Card>
+        )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {drawings.map((d) => (
+            <Card key={d.id} className="p-2 space-y-2">
+              {d.url && (
+                <img
+                  src={d.url}
+                  alt={d.ocr_text ? `Handwritten note: ${d.ocr_text.slice(0, 120)}` : `Sketch for ${customer.name || "customer"}`}
+                  className="w-full rounded border bg-white"
+                />
+              )}
+              {d.ocr_text ? (
+                <p className="text-sm whitespace-pre-wrap px-1">{d.ocr_text}</p>
+              ) : d.user_id === user?.id ? (
+                <Button size="sm" variant="secondary" className="w-full" onClick={() => transcribeExisting(d)}>
+                  <Sparkles className="h-4 w-4 mr-1" />Transcribe handwriting
+                </Button>
+              ) : (
+                <p className="text-xs text-muted-foreground px-1">No transcription</p>
+              )}
+              {d.user_id === user?.id && (
+                <Button size="sm" variant="ghost" className="w-full" onClick={() => removeDrawing(d)} aria-label="Delete drawing">
+                  <Trash2 className="h-4 w-4 mr-1" />Delete
+                </Button>
+              )}
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-6">
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="font-serif text-2xl">Photos</h2>
+          {user && (
+            <Button size="sm" onClick={() => fileInput.current?.click()} aria-label="Add photo">
+              <Camera className="h-4 w-4 mr-1" />Add
+            </Button>
+          )}
+          <input ref={fileInput} type="file" accept="image/*" capture="environment" hidden onChange={onPhoto} aria-label="Upload photo" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {photos.map((p) => (
+            <div key={p.id} className="relative group">
+              {p.url && <img src={p.url} alt={`Photo for ${customer.name || "customer"}`} className="w-full aspect-square object-cover rounded-md" />}
+              {p.user_id === user?.id && <button
+                onClick={() => removePhoto(p)}
+                className="absolute top-1 right-1 bg-background/80 rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
+                aria-label="Delete photo"
+              >
+                <X className="h-4 w-4" />
+              </button>}
+            </div>
+          ))}
+        </div>
+      </section>
       {isOwner && !customer.team_id && (
         <section className="mt-6">
           <h2 className="font-serif text-2xl mb-2">Share</h2>
@@ -639,110 +765,8 @@ export default function CustomerDetail() {
         </Card>
       </section>
 
-      {isOwner && customer.team_id && personalDetails.some((row) => row.user_id !== user?.id) && (
-        <section className="mt-6">
-          <h2 className="font-serif text-2xl mb-2">Team member additions</h2>
-          <div className="space-y-3">
-            {personalDetails.filter((row) => row.user_id !== user?.id).map((row) => (
-              <Card key={row.user_id} className="p-4 space-y-2">
-                <p className="font-medium">{teamMembers.find((member) => member.user_id === row.user_id)?.email ?? "Team member"}</p>
-                {row.notes && <p className="text-sm whitespace-pre-wrap">{row.notes}</p>}
-                {row.wants.length > 0 && <p className="text-sm"><span className="text-muted-foreground">Wants:</span> {row.wants.join(" · ")}</p>}
-              </Card>
-            ))}
-          </div>
-        </section>
+      </>
       )}
-
-      <section className="mt-6">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="font-serif text-2xl">
-            <label htmlFor="cust-notes">Customer Notes</label>
-          </h2>
-          {canEdit && <VoiceCapture context="notes" onCommit={applyVoice} variant="outline" size="sm" title="Dictate note" />}
-        </div>
-        <Textarea
-          id="cust-notes"
-          value={customer.typed_notes ?? ""}
-          onChange={(e) => update({ typed_notes: e.target.value })}
-          readOnly={!canEdit}
-          placeholder={canEdit ? "Type any notes here…" : "View only"}
-          rows={6}
-        />
-      </section>
-
-      <section className="mt-6">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="font-serif text-2xl">Drawings</h2>
-          {!showCanvas && user && (
-            <Button size="sm" onClick={() => setShowCanvas(true)} aria-label="Add new drawing">
-              <Pencil className="h-4 w-4 mr-1" />New
-            </Button>
-          )}
-        </div>
-        {showCanvas && (
-          <Card className="p-3 mb-3">
-            <DrawingCanvas
-              onSave={async (b) => { await saveDrawing(b); }}
-              onCancel={() => setShowCanvas(false)}
-              onOcr={saveAndTranscribe}
-            />
-          </Card>
-        )}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {drawings.map((d) => (
-            <Card key={d.id} className="p-2 space-y-2">
-              {d.url && (
-                <img
-                  src={d.url}
-                  alt={d.ocr_text ? `Handwritten note: ${d.ocr_text.slice(0, 120)}` : `Sketch for ${customer.name || "customer"}`}
-                  className="w-full rounded border bg-white"
-                />
-              )}
-              {d.ocr_text ? (
-                <p className="text-sm whitespace-pre-wrap px-1">{d.ocr_text}</p>
-              ) : d.user_id === user?.id ? (
-                <Button size="sm" variant="secondary" className="w-full" onClick={() => transcribeExisting(d)}>
-                  <Sparkles className="h-4 w-4 mr-1" />Transcribe handwriting
-                </Button>
-              ) : (
-                <p className="text-xs text-muted-foreground px-1">No transcription</p>
-              )}
-              {d.user_id === user?.id && (
-                <Button size="sm" variant="ghost" className="w-full" onClick={() => removeDrawing(d)} aria-label="Delete drawing">
-                  <Trash2 className="h-4 w-4 mr-1" />Delete
-                </Button>
-              )}
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section className="mt-6">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="font-serif text-2xl">Photos</h2>
-          {user && (
-            <Button size="sm" onClick={() => fileInput.current?.click()} aria-label="Add photo">
-              <Camera className="h-4 w-4 mr-1" />Add
-            </Button>
-          )}
-          <input ref={fileInput} type="file" accept="image/*" capture="environment" hidden onChange={onPhoto} aria-label="Upload photo" />
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {photos.map((p) => (
-            <div key={p.id} className="relative group">
-              {p.url && <img src={p.url} alt={`Photo for ${customer.name || "customer"}`} className="w-full aspect-square object-cover rounded-md" />}
-              {p.user_id === user?.id && <button
-                onClick={() => removePhoto(p)}
-                className="absolute top-1 right-1 bg-background/80 rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
-                aria-label="Delete photo"
-              >
-                <X className="h-4 w-4" />
-              </button>}
-            </div>
-          ))}
-        </div>
-      </section>
     </main>
   );
 }

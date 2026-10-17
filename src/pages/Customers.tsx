@@ -35,7 +35,7 @@ export default function Customers() {
   return <CustomersInner />;
 }
 
-function CustomerRow({ c, onOpen, onRename }: { c: Customer; onOpen: () => void; onRename: (name: string) => void | Promise<void> }) {
+function CustomerRow({ c, onOpen, onEdit, onRename }: { c: Customer; onOpen: () => void; onEdit: () => void; onRename: (name: string) => void | Promise<void> }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(c.name);
   const labels = useLabels();
@@ -64,7 +64,7 @@ function CustomerRow({ c, onOpen, onRename }: { c: Customer; onOpen: () => void;
           {[c.designers?.length ? c.designers.join(" · ") : null, c.looking_for?.length ? `${labels.looking_for}: ${c.looking_for.join(" · ")}` : null, c.shoe_size ? `Size ${c.shoe_size}` : null, c.phone || c.email || "—"].filter(Boolean).join(" · ")}
         </div>
       </div>
-      {c.shared !== "view" && <Button variant="ghost" size="icon" onClick={(event) => { event.stopPropagation(); onOpen(); }} aria-label="Edit customer"><Pencil className="h-4 w-4" /></Button>}
+      {c.shared !== "view" && <Button variant="ghost" size="icon" onClick={(event) => { event.stopPropagation(); onEdit(); }} aria-label="Edit customer"><Pencil className="h-4 w-4" /></Button>}
     </Card>
   );
 }
@@ -192,7 +192,7 @@ function CustomersInner() {
     }
     toast.success(newName.trim() + " added to " + destinationName);
     setNewName(""); setNewPhone(""); setNewEmail(""); setDuplicate(null); setAdding(false);
-    nav(`/c/${data.id}`);
+    nav(`/c/${data.id}?new=1`);
   };
 
   const createFromVoice = async (result: ParsedResult): Promise<void> => {
@@ -217,7 +217,7 @@ function CustomersInner() {
       return;
     }
     toast.success("Customer added to " + destinationName);
-    nav(`/c/${data.id}`);
+    nav(`/c/${data.id}?new=1`);
   };
 
   return (
@@ -279,7 +279,7 @@ function CustomersInner() {
         {loading ? <p className="text-center text-muted-foreground py-12">Loading…</p> : results.length === 0 ? <p className="text-center text-muted-foreground py-12">{customers.length === 0 ? "No customers yet." : "No matches."}</p> : results.map((customer) => (
           <div key={customer.id} className="flex items-center gap-2">
           {canMove && <Checkbox aria-label={`Select ${customer.name}`} checked={selected.includes(customer.id)} onCheckedChange={(checked) => setSelected((ids) => checked ? ids.length < 100 ? [...ids, customer.id] : ids : ids.filter((id) => id !== customer.id))} />}
-          <div className="flex-1 min-w-0"><CustomerRow c={customer} onOpen={() => nav(`/c/${customer.id}`)} onRename={async (name) => {
+          <div className="flex-1 min-w-0"><CustomerRow c={customer} onOpen={() => nav(`/c/${customer.id}`)} onEdit={() => nav(`/c/${customer.id}?edit=1`)} onRename={async (name) => {
             const previous = customers;
             setCustomers((items) => items.map((item) => item.id === customer.id ? { ...item, name } : item));
             const { error } = await db.from("customers").update({ name }).eq("id", customer.id);
