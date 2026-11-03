@@ -1,3 +1,4 @@
+import { PhoneInput } from "@/components/PhoneInput";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -231,7 +232,7 @@ function CustomersInner() {
             <Button size="sm" onClick={() => { setAdding((value) => !value); setDuplicate(null); }}><Plus className="h-4 w-4 mr-1" />Add customer</Button>
           </div>
         </div>
-        <h1 className="font-serif text-3xl">Customers</h1>
+        <div className="flex items-center gap-3"><img src="/icon-192.png" alt="" className="size-9" /><h1 className="font-serif text-3xl">Customers</h1></div>
         <p className="text-sm text-muted-foreground mt-1">{customers.length} accessible · {destinationName} selected for new customers</p>
       </header>
 
@@ -253,7 +254,7 @@ function CustomersInner() {
             <p className="font-medium mt-1">{destinationName}</p>
             <form onSubmit={reviewAdd} className="space-y-3 mt-3">
               <Input autoFocus value={newName} onChange={(event) => { setNewName(event.target.value); setDuplicate(null); }} placeholder="Customer name *" />
-              <Input value={newPhone} onChange={(event) => { setNewPhone(event.target.value); setDuplicate(null); }} placeholder="Phone" inputMode="tel" />
+              <PhoneInput value={newPhone} onValueChange={(phone) => { setNewPhone(phone); setDuplicate(null); }} placeholder="Phone" aria-label="Phone" />
               <Input value={newEmail} onChange={(event) => setNewEmail(event.target.value)} placeholder="Email" inputMode="email" />
               {duplicate && (
                 <Card className="p-3 border-amber-500/50">

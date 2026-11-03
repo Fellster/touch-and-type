@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { calendarNames, getCalendarPreference, saveCalendarPreference, type CalendarProvider } from "@/lib/calendarPreference";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Check, LogOut, RotateCcw, Share2 } from "lucide-react";
 import { toast } from "sonner";
@@ -23,6 +25,7 @@ const FIELD_KEYS = Object.keys(DEFAULT_LABELS) as FieldKey[];
 
 export default function Settings() {
   const nav = useNavigate();
+  const [calendar, setCalendar] = useState(getCalendarPreference);
   const { signOut } = useAuth();
   const { theme, accent, font, labels, setTheme, setAccent, setFont, setLabel, resetLabels } = useSettings();
 
@@ -69,6 +72,24 @@ export default function Settings() {
         </Button>
         <h1 className="font-serif text-2xl">Settings</h1>
       </header>
+
+      <section className="px-5 max-w-2xl mx-auto mt-6">
+        <h2 className="font-serif text-xl mb-2">Calendar</h2>
+        <Label htmlFor="preferred-calendar">Preferred calendar</Label>
+        <select id="preferred-calendar" value={calendar} className="mt-1 block w-full rounded-md border border-input bg-background p-2 text-sm"
+          onChange={(event) => {
+            const value = event.target.value as CalendarProvider;
+            try {
+              saveCalendarPreference(value);
+              setCalendar(value);
+            } catch {
+              toast.error("Could not save your calendar preference.");
+            }
+          }}>
+          {Object.entries(calendarNames).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+        </select>
+        <p className="text-xs text-muted-foreground mt-2">Google Calendar opens an event draft. Apple Calendar and Outlook download an event to import.</p>
+      </section>
 
       <section className="px-5 max-w-2xl mx-auto mt-6">
         <h2 className="font-serif text-xl mb-3">Themes</h2>
