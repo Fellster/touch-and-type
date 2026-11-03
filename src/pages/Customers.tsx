@@ -1,3 +1,4 @@
+import { NotedLogo } from "@/components/NotedLogo";
 import { PhoneInput } from "@/components/PhoneInput";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -232,7 +233,7 @@ function CustomersInner() {
             <Button size="sm" onClick={() => { setAdding((value) => !value); setDuplicate(null); }}><Plus className="h-4 w-4 mr-1" />Add customer</Button>
           </div>
         </div>
-        <div className="flex items-center gap-3"><img src="/icon-192.png" alt="" className="size-9" /><h1 className="font-serif text-3xl">Customers</h1></div>
+        <div className="flex items-center gap-3"><NotedLogo className="size-9" /><h1 className="font-serif text-3xl">Customers</h1></div>
         <p className="text-sm text-muted-foreground mt-1">{customers.length} accessible · {destinationName} selected for new customers</p>
       </header>
 

@@ -1,3 +1,4 @@
+import { NotedLogo } from "@/components/NotedLogo";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -95,7 +96,7 @@ export default function Preview() {
       />
 
       <header className="px-5 pt-10 pb-6 max-w-3xl mx-auto text-center">
-        <img src="/favicon.png" alt="Noted logo" className="h-24 w-24 object-contain mx-auto mb-4" />
+        <NotedLogo className="h-24 w-24 object-contain mx-auto mb-4" />
         <h1 className="font-serif text-4xl mb-3">My Private Customer Notebook</h1>
         <p className="text-muted-foreground max-w-xl mx-auto">
           Remember every client, their preferred designers, sizes, wishlists, pictures, sketches from the fitting room,
