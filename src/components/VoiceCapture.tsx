@@ -1,3 +1,4 @@
+import { PhoneInput } from "@/components/PhoneInput";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -303,7 +304,7 @@ function ReviewDialog({
                 <Input value={draft.customer?.name ?? ""} onChange={(e) => setCust({ name: e.target.value })} />
               </Field>
               <Field label="Phone">
-                <Input value={draft.customer?.phone ?? ""} onChange={(e) => setCust({ phone: e.target.value })} />
+                <PhoneInput value={draft.customer?.phone ?? ""} onValueChange={(phone) => setCust({ phone })} />
               </Field>
               <Field label="Email">
                 <Input value={draft.customer?.email ?? ""} onChange={(e) => setCust({ email: e.target.value })} />

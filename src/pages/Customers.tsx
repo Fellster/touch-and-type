@@ -1,3 +1,4 @@
+import { PhoneInput } from "@/components/PhoneInput";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -253,7 +254,7 @@ function CustomersInner() {
             <p className="font-medium mt-1">{destinationName}</p>
             <form onSubmit={reviewAdd} className="space-y-3 mt-3">
               <Input autoFocus value={newName} onChange={(event) => { setNewName(event.target.value); setDuplicate(null); }} placeholder="Customer name *" />
-              <Input value={newPhone} onChange={(event) => { setNewPhone(event.target.value); setDuplicate(null); }} placeholder="Phone" inputMode="tel" />
+              <PhoneInput value={newPhone} onValueChange={(phone) => { setNewPhone(phone); setDuplicate(null); }} placeholder="Phone" aria-label="Phone" />
               <Input value={newEmail} onChange={(event) => setNewEmail(event.target.value)} placeholder="Email" inputMode="email" />
               {duplicate && (
                 <Card className="p-3 border-amber-500/50">
