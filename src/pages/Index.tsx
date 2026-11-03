@@ -1,3 +1,4 @@
+import { calendarNames, downloadCalendarEvent, getCalendarPreference } from "@/lib/calendarPreference";
 import { CalendarPlus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -108,6 +109,8 @@ function SortableTodo({
   // Customer-created tasks include the customer's name on the second line.
   const customerLine = t.title.split("\n")[1]?.trim().toLowerCase();
   const customer = customers.find((c) => c.name.trim().toLowerCase() === customerLine);
+  const provider = getCalendarPreference();
+  const calendarTitle = customer ? `Noted follow-up — ${customer.name}` : "Noted follow-up";
   const calendarUrl = !t.done ? googleCalendarUrl(t.due_at, customer?.name) : null;
 
   const style = {
@@ -204,15 +207,25 @@ function SortableTodo({
         </div>
       </div>
       <div className="flex flex-col gap-1">
-        {calendarUrl && (
+        {calendarUrl && (provider === "google" ? (
           <Button asChild variant="ghost" size="icon">
             <a href={calendarUrl} target="_blank" rel="noopener noreferrer"
               aria-label="Add to Google Calendar" title="Add to Google Calendar"
-              onClick={() => { try { localStorage.setItem(calendarOpenedKey(t.id), "1"); } catch { /* Calendar still opens if storage is unavailable. */ } }}>
+              onClick={() => { try { localStorage.setItem(calendarOpenedKey(t.id), provider); } catch { /* Calendar can still open. */ } }}>
               <CalendarPlus className="h-4 w-4" />
             </a>
           </Button>
-        )}
+        ) : (
+          <Button variant="ghost" size="icon"
+            aria-label={`Download event for ${calendarNames[provider]}`}
+            title={`Download event for ${calendarNames[provider]}`}
+            onClick={() => {
+              downloadCalendarEvent(t.id, t.due_at!, calendarTitle);
+              try { localStorage.setItem(calendarOpenedKey(t.id), provider); } catch { /* Download still works. */ }
+            }}>
+            <CalendarPlus className="h-4 w-4" />
+          </Button>
+        ))}
         <Button variant="ghost" size="icon" onClick={() => onRemove(t.id)} aria-label="Delete task">
           <Trash2 className="h-4 w-4" />
         </Button>
@@ -310,15 +323,15 @@ export default function Index() {
       void load();
       return;
     }
-    let calendarOpened = false;
-    try { calendarOpened = localStorage.getItem(calendarOpenedKey(t.id)) === "1"; } catch { /* Storage may be unavailable. */ }
+    let calendarOpened: string | null = null;
+    try { calendarOpened = localStorage.getItem(calendarOpenedKey(t.id)); } catch { /* Storage may be unavailable. */ }
     if (calendarOpened) {
       toast("To-do rescheduled.", {
         description: "Update your calendar.",
-        action: {
+        action: calendarOpened === "1" || calendarOpened === "google" ? {
           label: "Open Google Calendar",
           onClick: () => window.open("https://calendar.google.com/calendar/", "_blank", "noopener,noreferrer"),
-        },
+        } : undefined,
       });
     }
   };
