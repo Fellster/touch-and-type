@@ -15,7 +15,7 @@ type SampleCustomer = {
   width: string;
   looking_for: string[];
   notes: string;
-  drawing: string; // inline SVG data
+  drawing: string;
 };
 
 const SAMPLES: SampleCustomer[] = [
@@ -27,7 +27,7 @@ const SAMPLES: SampleCustomer[] = [
     width: "Narrow",
     looking_for: ["Ivory satin pump", "Ankle strap"],
     notes: "Prefers a 90mm heel. Allergic to nickel buckles. Wedding in June.",
-    drawing: "pump",
+    drawing: "/demo/a-laurent.jpeg",
   },
   {
     id: "sample-2",
@@ -37,7 +37,7 @@ const SAMPLES: SampleCustomer[] = [
     width: "Medium",
     looking_for: ["Block heel sandal", "Metallic"],
     notes: "Loves warm gold tones. Comfortable for long evenings.",
-    drawing: "sandal",
+    drawing: "/demo/m-okafor.png",
   },
   {
     id: "sample-3",
@@ -47,7 +47,7 @@ const SAMPLES: SampleCustomer[] = [
     width: "Medium",
     looking_for: ["Ballet flat", "Cap toe"],
     notes: "Two-tone cap toe, small bow. Size up half for suede.",
-    drawing: "flat",
+    drawing: "/demo/s-yamamoto.png",
   },
   {
     id: "sample-4",
@@ -57,44 +57,18 @@ const SAMPLES: SampleCustomer[] = [
     width: "Wide",
     looking_for: ["Knee boot", "Almond toe"],
     notes: "Autumn order. Prefers vegetable-tanned leather.",
-    drawing: "boot",
+    drawing: "/demo/e-rossi.png",
   },
 ];
 
-function SampleDrawing({ kind }: { kind: string }) {
-  const stroke = "hsl(var(--foreground))";
-  const common = { fill: "none", stroke, strokeWidth: 1.6, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+function SampleDrawing({ src, name }: { src: string; name: string }) {
   return (
-    <svg viewBox="0 0 160 100" className="w-full h-24 bg-white rounded-md border" aria-hidden="true">
-      {kind === "pump" && (
-        <g {...common}>
-          <path d="M20 75 Q40 72 70 70 Q110 68 135 55 Q140 52 138 60 L128 78 Q120 82 90 82 Q45 82 22 80 Z" />
-          <path d="M135 55 L138 30 Q139 20 132 22 L128 34" />
-          <path d="M40 82 L42 90" /><path d="M115 82 L118 90" />
-        </g>
-      )}
-      {kind === "sandal" && (
-        <g {...common}>
-          <path d="M25 78 Q80 74 130 72" />
-          <path d="M28 82 Q80 80 130 78" />
-          <path d="M55 74 L48 55 L70 55" />
-          <path d="M95 73 L88 55 L108 55" />
-          <path d="M130 72 L138 62 L138 80 Z" />
-        </g>
-      )}
-      {kind === "flat" && (
-        <g {...common}>
-          <path d="M25 72 Q60 68 105 68 Q135 68 140 76 Q140 82 120 84 Q70 86 30 82 Z" />
-          <path d="M105 68 Q108 74 115 76" />
-        </g>
-      )}
-      {kind === "boot" && (
-        <g {...common}>
-          <path d="M40 82 L40 25 L70 25 L70 68 Q90 68 120 68 Q135 68 138 78 Q138 84 118 86 Q60 88 40 84 Z" />
-          <path d="M40 40 L70 40" />
-        </g>
-      )}
-    </svg>
+    <img
+      src={src}
+      alt={`Sample drawing for ${name}`}
+      loading="lazy"
+      className="w-full h-40 sm:h-36 object-contain bg-white rounded-md border"
+    />
   );
 }
 
@@ -122,15 +96,20 @@ export default function Preview() {
 
       <header className="px-5 pt-10 pb-6 max-w-3xl mx-auto text-center">
         <img src="/favicon.png" alt="Noted logo" className="h-24 w-24 object-contain mx-auto mb-4" />
-        <h1 className="font-serif text-4xl mb-3">A private notebook for footwear boutiques</h1>
+        <h1 className="font-serif text-4xl mb-3">My Private Customer Notebook</h1>
         <p className="text-muted-foreground max-w-xl mx-auto">
-          Noted helps sales associates remember every client: preferred designers, exact sizes, wishlists, sketches
-          from the fitting room, and handwritten notes — all searchable in seconds.
+          Remember every client, their preferred designers, sizes, wishlists, pictures, sketches from the fitting room,
+          and handwritten notes — all searchable in seconds.
         </p>
         <div className="flex gap-2 justify-center mt-5">
           <Button asChild><Link to="/auth">Sign in</Link></Button>
           <Button asChild variant="outline"><Link to="/auth">Create an account</Link></Button>
         </div>
+        <p className="mt-4">
+          <a className="text-sm font-medium text-primary underline underline-offset-4" href="/demo/noted-demo.mp4" target="_blank" rel="noopener noreferrer">
+            Noted Demo
+          </a>
+        </p>
         <p className="text-xs text-muted-foreground mt-3 flex items-center justify-center gap-1">
           <Lock className="h-3 w-3" /> Sample data below — no real customer information is shown.
         </p>
@@ -178,7 +157,7 @@ export default function Preview() {
               <Card key={c.id} className="p-4">
                 <div className="flex gap-4">
                   <div className="w-40 shrink-0 hidden sm:block">
-                    <SampleDrawing kind={c.drawing} />
+                    <SampleDrawing src={c.drawing} name={c.name} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex justify-between items-start gap-3">
@@ -197,7 +176,7 @@ export default function Preview() {
                     </div>
                     <p className="text-sm mt-2">{c.notes}</p>
                     <div className="sm:hidden mt-3">
-                      <SampleDrawing kind={c.drawing} />
+                      <SampleDrawing src={c.drawing} name={c.name} />
                     </div>
                   </div>
                 </div>
