@@ -1,3 +1,4 @@
+import { CalendarPlus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -69,6 +70,22 @@ const formatDue = (iso: string | null) => {
   });
 };
 
+const calendarOpenedKey = (id: string) => `noted:calendar-opened:${id}`;
+
+function googleCalendarUrl(due: string | null, customerName?: string) {
+  if (!due) return null;
+  const start = new Date(due).getTime();
+  if (!Number.isFinite(start)) return null;
+  const stamp = (ms: number) => new Date(ms).toISOString().replace(/[-:]|\.\d{3}/g, "");
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: customerName ? `Noted follow-up — ${customerName}` : "Noted follow-up",
+    dates: `${stamp(start)}/${stamp(start + 15 * 60_000)}`,
+    details: "Open Noted: https://notedcustomers.netlify.app/",
+  });
+  return `https://calendar.google.com/calendar/render?${params}`;
+}
+
 function SortableTodo({
   t,
   customers,
@@ -88,6 +105,11 @@ function SortableTodo({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: t.id });
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(t.title);
+  // Customer-created tasks include the customer's name on the second line.
+  const customerLine = t.title.split("\n")[1]?.trim().toLowerCase();
+  const customer = customers.find((c) => c.name.trim().toLowerCase() === customerLine);
+  const calendarUrl = !t.done ? googleCalendarUrl(t.due_at, customer?.name) : null;
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -182,6 +204,15 @@ function SortableTodo({
         </div>
       </div>
       <div className="flex flex-col gap-1">
+        {calendarUrl && (
+          <Button asChild variant="ghost" size="icon">
+            <a href={calendarUrl} target="_blank" rel="noopener noreferrer"
+              aria-label="Add to Google Calendar" title="Add to Google Calendar"
+              onClick={() => { try { localStorage.setItem(calendarOpenedKey(t.id), "1"); } catch { /* Calendar still opens if storage is unavailable. */ } }}>
+              <CalendarPlus className="h-4 w-4" />
+            </a>
+          </Button>
+        )}
         <Button variant="ghost" size="icon" onClick={() => onRemove(t.id)} aria-label="Delete task">
           <Trash2 className="h-4 w-4" />
         </Button>
@@ -271,9 +302,25 @@ export default function Index() {
 
   const updateDue = async (t: Todo, v: string) => {
     const iso = fromLocalInput(v);
+    if (iso === t.due_at) return;
     setTodos((prev) => prev.map((x) => (x.id === t.id ? { ...x, due_at: iso } : x)));
     const { error } = await supabase.from("todos").update({ due_at: iso }).eq("id", t.id);
-    if (error) toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      void load();
+      return;
+    }
+    let calendarOpened = false;
+    try { calendarOpened = localStorage.getItem(calendarOpenedKey(t.id)) === "1"; } catch { /* Storage may be unavailable. */ }
+    if (calendarOpened) {
+      toast("To-do rescheduled.", {
+        description: "Update your calendar.",
+        action: {
+          label: "Open Google Calendar",
+          onClick: () => window.open("https://calendar.google.com/calendar/", "_blank", "noopener,noreferrer"),
+        },
+      });
+    }
   };
 
   const updateTitle = async (t: Todo, v: string) => {
