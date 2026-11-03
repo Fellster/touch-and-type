@@ -1,3 +1,4 @@
+import { NotedLogo } from "@/components/NotedLogo";
 import { calendarNames, downloadCalendarEvent, getCalendarPreference } from "@/lib/calendarPreference";
 import { CalendarPlus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -558,7 +559,7 @@ export default function Index() {
             <LogOut className="h-5 w-5" />
           </Button>
         </div>
-        <div className="flex items-center gap-3"><img src="/icon-192.png" alt="" className="size-9" /><h1 className="font-serif text-3xl">To-Do</h1></div>
+        <div className="flex items-center gap-3"><NotedLogo className="size-9" /><h1 className="font-serif text-3xl">To-Do</h1></div>
         <p className="text-sm text-muted-foreground mt-1">
           {todos.filter((t) => !t.done).length} open · {todos.filter((t) => t.done).length} done
         </p>

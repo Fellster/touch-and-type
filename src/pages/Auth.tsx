@@ -1,3 +1,4 @@
+import { NotedLogo } from "@/components/NotedLogo";
 import { useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
@@ -108,7 +109,7 @@ setSignupComplete(true);
 
       <Card className="w-full max-w-md p-8 shadow-sm">
         <header className="text-center mb-6">
-          <img src="/icon-192.png" alt="" className="mx-auto mb-3 size-16" />
+          <NotedLogo className="mx-auto mb-3 size-16" />
           <h1 className="text-4xl font-serif">{mode === "signin" ? "Sign in to Noted" : "Create your Noted account"}</h1>
           <p className="text-sm text-muted-foreground mt-1">Your private customer notebook</p>
         </header>
