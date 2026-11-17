@@ -250,6 +250,11 @@ export default function Settings() {
       </section>
 
       <section className="px-5 max-w-2xl mx-auto mt-10">
+        <h2 className="font-serif text-xl mb-1">Noted Personal</h2>
+        <p className="text-sm text-muted-foreground mb-3">Make a copy for the separate offline Android app.</p>
+        <Button variant="outline" className="w-full" onClick={() => nav("/personal-export")}>Copy my notebook</Button>
+      </section>
+      <section className="px-5 max-w-2xl mx-auto mt-10">
         <h2 className="font-serif text-xl mb-1">Account</h2>
         <p className="text-sm text-muted-foreground mb-3">Sign out of Noted on this device.</p>
         <Button variant="outline" className="w-full" onClick={handleSignOut}>
