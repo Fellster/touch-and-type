@@ -1083,3 +1083,21 @@ h3,
     hsl(220 57% 18% / 0.055) 24px
   );
 }
+
+.reminder-settings .reminder-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+}
+.reminder-settings input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  min-height: 22px;
+  flex: 0 0 22px;
+  accent-color: var(--primary);
+}
+.reminder-settings button {
+  margin: 4px 8px 4px 0;
+}

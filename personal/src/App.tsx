@@ -27,6 +27,15 @@ import CustomerEditor from "./components/CustomerEditor";
 import QuickCustomer from "./components/QuickCustomer";
 import Appearance from "./components/Appearance";
 import FieldNames from "./components/FieldNames";
+import Reminders from "./components/Reminders";
+import {
+  isAndroid,
+  listenForReminderActions,
+  readReminderPreferences,
+  rememberVerifiedBackup,
+  syncReminders,
+  writeReminderPreferences,
+} from "./reminders";
 import { Capacitor } from "@capacitor/core";
 import NotedLogo from "./components/PersonalLogo";
 import { openCalendar, openEmail } from "./integrations";
@@ -194,6 +203,109 @@ export default function App() {
       speech.current?.cancel();
     };
   }, []);
+  const draftsOpen = useRef(false);
+  draftsOpen.current = !!(
+    customerDraft ||
+    taskDraft ||
+    restore ||
+    drawing ||
+    addingCustomer
+  );
+  useEffect(() => {
+    if (!ready || !isAndroid()) return;
+    const refresh = () => {
+      void syncReminders(current.current.notebook).catch(() =>
+        setMessage(
+          "Your notebook is saved, but reminders could not be updated. Reopen Noted and check Notifications in Settings.",
+        ),
+      );
+    };
+    refresh();
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    document.addEventListener("resume", refresh);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+      document.removeEventListener("resume", refresh);
+    };
+  }, [ready, notebook]);
+  useEffect(() => {
+    if (!ready || !isAndroid()) return;
+    let active = true;
+    const listener = listenForReminderActions((event) => {
+      if (!active) return;
+      void act(async () => {
+        const extra = event.notification.extra;
+        if (extra?.kind === "noted-backup") {
+          if (!draftsOpen.current) {
+            setSelected(null);
+            setTab("settings");
+          } else
+            setMessage(
+              "Open Settings when you finish editing to back up your notebook.",
+            );
+          return;
+        }
+        if (extra?.kind !== "noted-task" || event.actionId === "dismiss")
+          return;
+        // Finish any in-flight save before applying a notification action.
+        const started = Date.now();
+        while (lock.current && Date.now() - started < 5000)
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        const task = current.current.notebook.todos.find(
+          (t) => t.id === extra.taskId,
+        );
+        if (
+          !task ||
+          task.done ||
+          task.due !== extra.due ||
+          task.title !== event.notification.body ||
+          !readReminderPreferences().todos
+        ) {
+          setMessage(
+            "This reminder is no longer current. Your latest to-dos are saved in Noted.",
+          );
+          await syncReminders(current.current.notebook);
+          return;
+        }
+        if (event.actionId === "complete") {
+          await commit((n) => ({
+            ...n,
+            todos: n.todos.map((t) =>
+              t.id === task.id ? { ...t, done: true } : t,
+            ),
+          }));
+          setMessage("To-do completed.");
+        } else if (
+          event.actionId === "snooze15" ||
+          event.actionId === "snooze60"
+        ) {
+          const minutes = event.actionId === "snooze15" ? 15 : 60;
+          const p = readReminderPreferences();
+          p.snoozes[task.id] = {
+            due: task.due,
+            at: Date.now() + minutes * 60000,
+          };
+          writeReminderPreferences(p);
+          await syncReminders(current.current.notebook);
+          setMessage(
+            "Reminder snoozed for " +
+              minutes +
+              " minutes. The to-do date is unchanged.",
+          );
+        }
+        if (!draftsOpen.current) {
+          setSelected(task.customerId);
+          setTab("todo");
+        }
+      });
+    });
+    return () => {
+      active = false;
+      void listener.then((l) => l.remove());
+    };
+  }, [ready]);
   async function commit(change: (n: Notebook) => Notebook) {
     if (lock.current)
       throw new Error("Please wait for the current save to finish.");
@@ -295,10 +407,20 @@ export default function App() {
     else backupInput.current?.click();
   }
   async function backup(destination: "phone" | "drive" = "phone") {
-    return downloadBackup(
+    const bytes = await downloadBackup(
       await encodeBackup(current.current.notebook),
       destination,
     );
+    // Only a successfully written and verified Android export resets reminders.
+    if (isAndroid()) {
+      try {
+        await rememberVerifiedBackup();
+        await syncReminders(current.current.notebook);
+      } catch {
+        /* A reminder error must not turn a verified export into a failed backup. */
+      }
+    }
+    return bytes;
   }
   async function addPhoto(file: File) {
     if (!c) return;
@@ -865,6 +987,10 @@ export default function App() {
                 commit((n) => ({ ...n, settings: { ...n.settings, labels } }))
               }
             />
+            <Reminders
+              changed={() => syncReminders(current.current.notebook)}
+              report={setMessage}
+            />
             <h3>Backup & Restore</h3>
             <section className="card">
               <p>
@@ -1185,6 +1311,13 @@ export default function App() {
               onClick={() =>
                 void act(async () => {
                   await commit(() => restore);
+                  const preferences = readReminderPreferences();
+                  writeReminderPreferences({ ...preferences, snoozes: {} });
+                  void syncReminders(current.current.notebook).catch(() =>
+                    setMessage(
+                      "Notebook restored. Check Notifications in Settings.",
+                    ),
+                  );
                   setRestore(null);
                   setSelected(null);
                   setMessage("Notebook restored.");

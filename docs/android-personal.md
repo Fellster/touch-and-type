@@ -199,3 +199,33 @@ atomic storage write with revision checks. The prior notebook is replaced, not
 merged; no automatic rollback copy is added. Independent backup remains available.
 Browser regression verifies restore is enabled for a valid file on a populated
 notebook, no extra-backup button appears, and invalid files still cannot restore.
+
+## 1.10 offline notifications
+
+Opt-in Notifications in Personal Settings: scheduled to-do alerts, optional weekly
+backup reminders, Test notification and an optional Android precise-timing setting.
+Permission is requested only from these controls. Without exact alarm access, alerts
+use inexact scheduling and the UI explains possible delays. No internet, push server,
+Supabase or daily digest is added. Calendar alerts remain separate copies.
+
+Pinned Capacitor Local Notifications 8.3.1 persists alarms natively and restores them
+after reboot. Reconcile after notebook changes and resume. Stable integer IDs and
+content fingerprints avoid duplicates. Completion, deletion, rescheduling and
+switching reminders off cancel obsolete scheduled AND delivered alerts. Enabling
+never replays all past tasks. Task name/customer name are the only alert content;
+channels default to secret lock-screen visibility. The monochrome status icon is n.
+
+Tap to open the customer/to-do list. Complete and 15-minute/1-hour snooze open the app
+and apply after notebook load. Guard changed due dates/titles, missing/completed tasks
+and disabled reminders. Preserve active edit drafts. Snooze leaves the due date alone.
+Choices/snoozes/backup freshness stay on this phone, outside imported notebooks.
+Only verified successful native exports reset the weekly backup interval; failed or
+canceled exports and browser downloads do not. Drive still owns upload completion.
+Reminder errors never roll back a saved notebook or report a verified backup as failed.
+
+Validation: planner/reconciliation regressions, existing notebook/browser tests,
+TypeScript, Android unit tests/build. Pixel acceptance: allow notifications, test,
+schedule a task a few minutes ahead, leave/lock phone, open alert, snooze, complete;
+reschedule/delete and verify old alert is gone. Repeat after restart and in airplane
+mode. Physical Pixel delivery remains to be tested. Android force-stop, Do Not
+Disturb and battery restrictions can prevent/delay delivery.
