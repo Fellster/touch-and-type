@@ -297,7 +297,7 @@ export default function App() {
     else backupInput.current?.click();
   }
   async function backup(destination: "phone" | "drive" = "phone") {
-    await downloadBackup(
+    return downloadBackup(
       await encodeBackup(current.current.notebook),
       destination,
     );
@@ -888,9 +888,14 @@ export default function App() {
                   disabled={busy}
                   onClick={() =>
                     void act(async () => {
-                      await backup();
+                      const bytes = await backup();
                       setMessage(
-                        "Backup export completed. Keep it somewhere safe.",
+                        (Capacitor.isNativePlatform()
+                          ? "Verified backup saved"
+                          : "Backup prepared") +
+                          " (" +
+                          bytes.toLocaleString() +
+                          " bytes). Keep it somewhere safe.",
                       );
                     })
                   }
@@ -901,9 +906,11 @@ export default function App() {
                   disabled={busy}
                   onClick={() =>
                     void act(async () => {
-                      await backup("drive");
+                      const bytes = await backup("drive");
                       setMessage(
-                        "Backup file saved to the selected location. Check Google Drive to confirm its upload has completed.",
+                        "Verified backup saved (" +
+                          bytes.toLocaleString() +
+                          " bytes). Check Google Drive to confirm its upload has completed.",
                       );
                     })
                   }

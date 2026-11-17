@@ -11,7 +11,7 @@ interface DeviceStore {
     text: string;
     name: string;
     destination?: "phone" | "drive";
-  }): Promise<void>;
+  }): Promise<{ bytes: number; verified: boolean }>;
   importFile(): Promise<{ text: string }>;
 }
 export const deviceStore = registerPlugin<DeviceStore>("NotedNotebook");
@@ -100,7 +100,14 @@ export async function downloadBackup(
 ) {
   const name =
     "Noted-Personal-" + new Date().toISOString().slice(0, 10) + ".json";
-  if (native()) return deviceStore.exportFile({ text, name, destination });
+  if (native()) {
+    const result = await deviceStore.exportFile({ text, name, destination });
+    if (result?.verified !== true || !(result.bytes > 0))
+      throw new Error(
+        "The backup was not verified. Your notebook is unchanged. Please create a new backup.",
+      );
+    return result.bytes;
+  }
   if (destination === "drive")
     throw new Error(
       "Google Drive backup is available in the Android app. You can save a phone backup here.",
@@ -113,4 +120,5 @@ export async function downloadBackup(
   a.download = name;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 30000);
+  return new TextEncoder().encode(text).length;
 }

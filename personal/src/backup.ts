@@ -25,7 +25,23 @@ export async function encodeBackup(notebook: Notebook): Promise<string> {
 export async function decodeBackup(text: string): Promise<Notebook> {
   if (new TextEncoder().encode(text).length > MAX_BACKUP_BYTES)
     throw new Error("Backup exceeds the 64 MB limit.");
-  const b = JSON.parse(text);
+  const normalized = text.replace(/^\uFEFF/, "").trim();
+  if (!normalized)
+    throw new Error(
+      "This backup file is empty (0 bytes). Create a fresh backup; your notebook is unchanged.",
+    );
+  if (normalized.startsWith("PK"))
+    throw new Error(
+      "This is an app installer or ZIP file. Choose a Noted .json backup; your notebook is unchanged.",
+    );
+  let b;
+  try {
+    b = JSON.parse(normalized);
+  } catch {
+    throw new Error(
+      "This backup is incomplete or is not a valid Noted backup. Create a fresh backup; your notebook is unchanged.",
+    );
+  }
   if (
     b?.format !== "noted-personal" ||
     b.version !== 1 ||
@@ -37,5 +53,11 @@ export async function decodeBackup(text: string): Promise<Notebook> {
     throw new Error(
       "Backup is damaged. Your current notebook has not been changed.",
     );
-  return validateNotebook(JSON.parse(b.payload));
+  try {
+    return validateNotebook(JSON.parse(b.payload));
+  } catch {
+    throw new Error(
+      "The backup contents are incomplete or invalid. Your notebook has not been changed.",
+    );
+  }
 }

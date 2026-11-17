@@ -88,6 +88,18 @@ describe("complete notebook backup", () => {
     expect(restored.settings.labels.designers).toBe("Designers");
     expect(restored.customers).toEqual(n.customers);
   });
+  it.each(["", " ", "\uFEFF"])(
+    "rejects empty backup %j with a clear message",
+    async (text) => {
+      await expect(decodeBackup(text)).rejects.toThrow("empty (0 bytes)");
+    },
+  );
+  it("explains incomplete and installer files without replacing data", async () => {
+    await expect(decodeBackup('{"format":')).rejects.toThrow("incomplete");
+    await expect(decodeBackup("PK\u0003\u0004")).rejects.toThrow(
+      "installer or ZIP",
+    );
+  });
   it("rejects a changed file even when it remains valid JSON", async () => {
     const backup = JSON.parse(await encodeBackup(sample()));
     backup.payload = backup.payload.replace("Maria", "Other");

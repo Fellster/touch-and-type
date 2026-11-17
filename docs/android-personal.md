@@ -37,7 +37,7 @@ and theme/font/highlight controls. Task titles edit inline, grouped tasks reorde
 with drag handles, and deletion can save the task to customer notes atomically.
 Customer changes require Save Changes; Done/Back confirm discarding unsaved edits.
 Existing storage/backup schemas and application identity are unchanged. Version code
-8 installs over the first test APK with the preserved signing key. Calendar/Gmail/
+9 installs over the first test APK with the preserved signing key. Calendar/Gmail/
 Drive integration is a later stage; this build remains fully offline.
 
 ## 1.2 refinements
@@ -93,7 +93,7 @@ an APK after installing those prerequisites. The browser test in
 The browser smoke test covers records/tasks, actual pictures and drawings, reload,
 backup/restore, restore protection, settings, ordering, and absence of external requests.
 
-Validation completed: 23 existing/voice/migration unit tests plus 18 local-storage, backup, appearance, Android-draft, and task-order tests passed; both TypeScript checks and production builds passed. The browser smoke test passed. Native assembleDebug and APK signature verification passed; packaged permissions exclude INTERNET.
+Validation completed: 23 existing/voice/migration unit tests plus 26 local-storage, backup, appearance, Android-draft, and task-order tests passed; both TypeScript checks and production builds passed. The browser smoke test passed. Native assembleDebug and APK signature verification passed; packaged permissions exclude INTERNET.
 
 ## Remaining acceptance gates
 
@@ -171,3 +171,22 @@ Acceptance on Pixel: camera capture/cancellation, upload, new thumbnails/full vi
 Gmail compose, Google Calendar draft date/time and reminder, local backup/restore,
 and Drive write/upload confirmation plus restore. Native app handoffs cannot be
 fully confirmed by browser tests.
+
+## 1.8 zero-byte export repair
+
+Stage the validated backup in an app-private file before opening Android's document
+picker, rather than relying on a large PluginCall text argument after returning.
+Remove the large text option before saved Activity state and restore the small pending
+export flag after recreation. The result callback can complete from the staged file
+even when the original JavaScript call is gone. Copy on the plugin worker thread
+using standard write mode, close the destination, then reopen and compare byte count
+and SHA-256 before resolving with verified=true and a nonzero size. Empty, truncated,
+changed or unverified writes fail; remove the newly-created failed document where
+possible. Never use an empty-string export fallback. Notebook SQLite is not modified.
+
+Native JVM regressions cover complete UTF-8/media-like data, reopening staged content,
+silent zero-byte providers, truncation, same-size corruption, absent/empty staging,
+and destination close failure. Restore errors explicitly explain empty/ZIP/incomplete
+files. JS requires native verification before confirming export or enabling overwrite.
+Pixel acceptance still required: create a new phone backup, confirm nonzero size and
+restore; then repeat through Drive and confirm upload.

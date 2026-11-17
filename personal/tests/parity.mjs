@@ -502,6 +502,40 @@ await page.screenshot({
   path: "/tmp/noted-clean-photos-v8.png",
   fullPage: true,
 });
+await page.getByRole("button", { name: "Back", exact: true }).click();
+await page.getByRole("button", { name: "Settings", exact: true }).click();
+await page
+  .locator("input[type=file]")
+  .nth(1)
+  .setInputFiles({
+    name: "empty.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(""),
+  });
+await expect(
+  page.getByText(/This backup file is empty \(0 bytes\)/),
+).toBeVisible();
+await expect(
+  page.getByRole("button", { name: "Replace notebook", exact: true }),
+).toHaveCount(0);
+await page
+  .locator("input[type=file]")
+  .nth(1)
+  .setInputFiles({
+    name: "incomplete.json",
+    mimeType: "application/json",
+    buffer: Buffer.from('{"format":'),
+  });
+await expect(
+  page.getByText(/This backup is incomplete or is not a valid Noted backup/),
+).toBeVisible();
+await expect(
+  page.getByRole("button", { name: "Replace notebook", exact: true }),
+).toHaveCount(0);
+await page.getByRole("button", { name: "Back", exact: true }).click();
+await page.getByRole("button", { name: "Customers", exact: true }).click();
+await page.getByRole("button", { name: /^Maria Garcia/ }).click();
+await expect(page.locator(".media-grid-photo .media-tile")).toHaveCount(2);
 assert.deepEqual(errors, []);
 assert.deepEqual(external, []);
 console.log(
