@@ -1,5 +1,7 @@
 import { chromium, expect } from "@playwright/test";
 import assert from "node:assert/strict";
+import { readFile, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 const browser = await chromium.launch({
   executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || undefined,
   args: ["--no-sandbox"],
@@ -38,6 +40,9 @@ await page
 await expect(
   page.getByRole("button", { name: "Done", exact: true }),
 ).toBeVisible();
+await expect(
+  page.getByRole("heading", { name: "My customer notes", exact: true }),
+).toHaveCount(0);
 await page.getByLabel("Shoe size", { exact: true }).fill("8");
 await page.getByLabel("Width", { exact: true }).selectOption("Wide");
 await page.getByPlaceholder("Add designers…", { exact: true }).fill("Chanel");
@@ -137,8 +142,38 @@ await expect(page.locator(".task-title")).toHaveText([
   "Second task revised",
   "Call Maria",
 ]);
+await page
+  .getByLabel("Due date for Second task revised", { exact: true })
+  .fill("2030-11-17T14:30");
+await expect(page.locator("time")).toHaveText(/Nov 17, 2030.*2:30 PM/);
+await page.reload();
+await expect(page.locator("time")).toHaveText(/Nov 17, 2030.*2:30 PM/);
+const start = await page
+  .getByRole("button", { name: "Drag to reorder Call Maria", exact: true })
+  .boundingBox();
+const end = await page
+  .getByRole("button", {
+    name: "Drag to reorder Second task revised",
+    exact: true,
+  })
+  .boundingBox();
+await page.mouse.move(start.x + 12, start.y + 12);
+await page.mouse.down();
+await page.mouse.move(start.x + 12, start.y, { steps: 4 });
+await expect(page.locator(".task-overlay")).toBeVisible();
+await page.mouse.move(end.x + 12, end.y + 10, { steps: 15 });
+await page.mouse.up();
+await expect(page.locator(".task-title")).toHaveText([
+  "Call Maria",
+  "Second task revised",
+]);
+await page.reload();
+await expect(page.locator(".task-title")).toHaveText([
+  "Call Maria",
+  "Second task revised",
+]);
 await page.screenshot({
-  path: "/tmp/noted-personal-todo-v2.png",
+  path: "/tmp/noted-personal-todo-v3.png",
   fullPage: true,
 });
 await page.getByRole("button", { name: "Designer", exact: true }).click();
@@ -160,6 +195,13 @@ await expect(
 const dl = page.waitForEvent("download");
 await page.getByRole("button", { name: "Save backup", exact: true }).click();
 await (await dl).saveAs("/tmp/noted-v2-backup.json");
+// Restore a previous-format notebook with text in the removed section.
+const backup = JSON.parse(await readFile("/tmp/noted-v2-backup.json", "utf8"));
+const notebook = JSON.parse(backup.payload);
+notebook.customers[0].personalNotes = "Legacy personal note";
+backup.payload = JSON.stringify(notebook);
+backup.sha256 = createHash("sha256").update(backup.payload).digest("hex");
+await writeFile("/tmp/noted-v2-backup.json", JSON.stringify(backup));
 await page
   .locator("input[type=file]")
   .nth(1)
@@ -187,7 +229,18 @@ await expect(
 await expect(
   page.getByRole("button", { name: "Open drawing", exact: true }),
 ).toBeVisible();
+await expect(
+  page.getByRole("heading", { name: "My notes", exact: true }),
+).toHaveCount(0);
+await expect(
+  page.getByText("Call when size eight arrives.\n\nLegacy personal note", {
+    exact: true,
+  }),
+).toBeVisible();
 await page.getByRole("button", { name: "Edit customer", exact: true }).click();
+await expect(page.getByLabel("Customer Notes", { exact: true })).toHaveValue(
+  "Call when size eight arrives.\n\nLegacy personal note",
+);
 await page.getByLabel("Customer name", { exact: true }).fill("Unsaved name");
 page.once("dialog", (d) => d.accept());
 await page.getByRole("button", { name: "Done", exact: true }).click();
@@ -205,7 +258,10 @@ await expect(page.getByText("Call Maria", { exact: true })).toHaveCount(0);
 await page.getByRole("button", { name: "Customers", exact: true }).click();
 await page.getByRole("button", { name: /^Maria Garcia/ }).click();
 await expect(
-  page.getByText("Call when size eight arrives.\nCall Maria", { exact: true }),
+  page.getByText(
+    "Call when size eight arrives.\nCall Maria\n\nLegacy personal note",
+    { exact: true },
+  ),
 ).toBeVisible();
 assert.deepEqual(errors, []);
 assert.deepEqual(external, []);

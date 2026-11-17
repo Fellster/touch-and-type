@@ -1,3 +1,4 @@
+import { customerNotes } from "../notes";
 import { Phone, Mail } from "lucide-react";
 import type { Customer, Notebook } from "../model";
 export default function CustomerRead({
@@ -60,16 +61,10 @@ export default function CustomerRead({
           </dl>
         </section>
       )}
-      {c.notes && (
+      {customerNotes(c) && (
         <section>
           <h2>Notes</h2>
-          <div className="card pre">{c.notes}</div>
-        </section>
-      )}
-      {c.personalNotes && (
-        <section>
-          <h2>My notes</h2>
-          <div className="card pre">{c.personalNotes}</div>
+          <div className="card pre">{customerNotes(c)}</div>
         </section>
       )}
       {(["drawing", "photo"] as const).map((kind) => {

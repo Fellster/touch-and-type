@@ -8,6 +8,7 @@ import {
   Square,
   Trash2,
 } from "lucide-react";
+import { customerNotes } from "../notes";
 import { PhoneInput } from "../../../src/components/PhoneInput";
 import Tags from "./Tags";
 import type { Customer, Notebook } from "../model";
@@ -232,8 +233,8 @@ export default function CustomerEditor(p: Props) {
           id="customer-notes"
           rows={6}
           placeholder="Type any notes here…"
-          value={c.notes}
-          onChange={(e) => update({ notes: e.target.value })}
+          value={customerNotes(c)}
+          onChange={(e) => update({ notes: e.target.value, personalNotes: "" })}
         />
       </section>
       {(["drawing", "photo"] as const).map((kind) => (
@@ -274,18 +275,6 @@ export default function CustomerEditor(p: Props) {
           </div>
         </section>
       ))}
-      <section>
-        <h2>My customer notes</h2>
-        <label className="field">
-          <span>My Notes</span>
-          <textarea
-            aria-label="My Notes"
-            rows={4}
-            value={c.personalNotes}
-            onChange={(e) => update({ personalNotes: e.target.value })}
-          />
-        </label>
-      </section>
       <div className="save-row">
         <button
           className="primary"

@@ -813,9 +813,7 @@ export default function App() {
                 setDeleteCustomerId(t.customerId ?? "");
               }}
               reorder={(ids) =>
-                void act(() =>
-                  commit((n) => ({ ...n, todos: orderedTasks(n.todos, ids) })),
-                )
+                commit((n) => ({ ...n, todos: orderedTasks(n.todos, ids) }))
               }
             />
           </>

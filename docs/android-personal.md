@@ -37,8 +37,18 @@ and theme/font/highlight controls. Task titles edit inline, grouped tasks reorde
 with drag handles, and deletion can save the task to customer notes atomically.
 Customer changes require Save Changes; Done/Back confirm discarding unsaved edits.
 Existing storage/backup schemas and application identity are unchanged. Version code
-2 installs over the first test APK with the preserved signing key. Calendar/Gmail/
+3 installs over the first test APK with the preserved signing key. Calendar/Gmail/
 Drive integration is a later stage; this build remains fully offline.
+
+## 1.2 refinements
+
+My customer notes is removed from read and edit pages; existing text is combined
+into Customer Notes for display and consolidated there when explicitly edited.
+The backup schema is unchanged. Scheduled tasks show a localized date and time,
+with the native date/time picker still available by tapping the schedule. Dragging
+uses a floating overlay, larger handle, shorter activation distance, and immediate
+local order on drop while the transactional save completes. A failed save restores
+the previous order and displays an error. Reordering stays within date groups.
 
 ## Read-only migration from the online app
 

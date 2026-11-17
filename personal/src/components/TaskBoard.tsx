@@ -1,6 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   DndContext,
+  DragOverlay,
+  defaultDropAnimationSideEffects,
   PointerSensor,
   KeyboardSensor,
   closestCenter,
@@ -15,7 +17,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Pencil, Trash2 } from "lucide-react";
+import { GripVertical, Pencil, Trash2, CalendarClock } from "lucide-react";
 import type { Customer, Todo } from "../model";
 export function taskGroups(todos: Todo[], now: Date) {
   const tomorrow = new Date(now);
@@ -63,52 +65,121 @@ type Props = {
   remove: (t: Todo) => void;
   due: (t: Todo, date: string) => void;
   openCustomer: (id: string) => void;
-  reorder: (ids: string[]) => void;
+  reorder: (ids: string[]) => Promise<void>;
 };
 export default function TaskBoard(p: Props) {
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  );
   const groups = taskGroups(p.todos, new Date());
   return (
     <div className="task-groups">
       {Object.entries(groups)
         .filter(([, items]) => items.length)
         .map(([name, items]) => (
-          <section
-            key={name}
-            aria-label={name}
-            className={name === "Completed" ? "completed-group" : ""}
-          >
-            <h2 className={name === "Overdue" ? "overdue" : ""}>{name}</h2>
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={({ active, over }) => {
-                if (p.busy || !over || active.id === over.id) return;
-                const old = items.findIndex((t) => t.id === active.id),
-                  next = items.findIndex((t) => t.id === over.id);
-                if (old >= 0 && next >= 0)
-                  p.reorder(arrayMove(items, old, next).map((t) => t.id));
-              }}
-            >
-              <SortableContext
-                items={items.map((t) => t.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                {items.map((t) => (
-                  <Task key={t.id} {...p} t={t} />
-                ))}
-              </SortableContext>
-            </DndContext>
-          </section>
+          <TaskGroup key={name} {...p} name={name} items={items} />
         ))}
     </div>
   );
 }
+function TaskGroup(p: Props & { name: string; items: Todo[] }) {
+  const [items, setItems] = useState(p.items),
+    [active, setActive] = useState<Todo | null>(null),
+    [height, setHeight] = useState(0),
+    [error, setError] = useState("");
+  const saving = useRef(false);
+  useEffect(() => {
+    if (!saving.current) setItems(p.items);
+  }, [p.items]);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+  return (
+    <section
+      aria-label={p.name}
+      className={p.name === "Completed" ? "completed-group" : ""}
+    >
+      <h2 className={p.name === "Overdue" ? "overdue" : ""}>{p.name}</h2>
+      {error && <p role="alert">{error}</p>}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={({ active }) => {
+          setError("");
+          setActive(items.find((t) => t.id === active.id) ?? null);
+          setHeight(active.rect.current.initial?.height ?? 0);
+        }}
+        onDragCancel={() => setActive(null)}
+        onDragEnd={async ({ active, over }) => {
+          setActive(null);
+          if (p.busy || saving.current || !over || active.id === over.id)
+            return;
+          const from = items.findIndex((t) => t.id === active.id),
+            to = items.findIndex((t) => t.id === over.id);
+          if (from < 0 || to < 0) return;
+          const next = arrayMove(items, from, to),
+            previous = items;
+          saving.current = true;
+          setItems(next);
+          try {
+            await p.reorder(next.map((t) => t.id));
+          } catch {
+            setItems(previous);
+            setError("Could not save the order. Please try again.");
+          } finally {
+            saving.current = false;
+          }
+        }}
+      >
+        <SortableContext
+          items={items.map((t) => t.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          {items.map((t) => (
+            <Task key={t.id} {...p} t={t} />
+          ))}
+        </SortableContext>
+        <DragOverlay
+          dropAnimation={{
+            duration: 180,
+            easing: "cubic-bezier(0.2, 0, 0, 1)",
+            sideEffects: defaultDropAnimationSideEffects({
+              styles: { active: { opacity: "0.2" } },
+            }),
+          }}
+        >
+          {active ? (
+            <article
+              className="card task task-overlay"
+              style={{ minHeight: height }}
+              aria-hidden="true"
+            >
+              <GripVertical size={18} />
+              <div className="task-text">
+                <p className="pre task-title">{active.title}</p>
+                {active.due && (
+                  <span className="scheduled-time">
+                    {formatDue(active.due)}
+                  </span>
+                )}
+              </div>
+            </article>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+    </section>
+  );
+}
+export function formatDue(iso: string) {
+  return new Date(iso).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 function Task(p: Props & { t: Todo }) {
   const { t } = p;
   const [editing, setEditing] = useState(false),
@@ -137,7 +208,11 @@ function Task(p: Props & { t: Todo }) {
       saving.current = false;
     }
   };
-  const drag = useSortable({ id: t.id, disabled: p.busy || t.done });
+  const drag = useSortable({
+    id: t.id,
+    disabled: p.busy || t.done,
+    transition: { duration: 180, easing: "cubic-bezier(0.2, 0, 0, 1)" },
+  });
   const customer =
     p.customers.find((c) => c.id === t.customerId) ??
     p.customers.find((c) =>
@@ -219,7 +294,13 @@ function Task(p: Props & { t: Todo }) {
             {customer.name}
           </button>
         )}
-        <div className="task-date">
+        <label className="task-date">
+          <CalendarClock size={14} />
+          {t.due ? (
+            <time dateTime={t.due}>{formatDue(t.due)}</time>
+          ) : (
+            <span>Schedule</span>
+          )}
           <input
             type="datetime-local"
             aria-label={"Due date for " + t.title}
@@ -232,7 +313,7 @@ function Task(p: Props & { t: Todo }) {
               )
             }
           />
-        </div>
+        </label>
       </div>
       <div className="task-actions">
         <button
