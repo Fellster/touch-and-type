@@ -111,6 +111,9 @@ const handle = page.getByRole("button", {
   name: "Drag to reorder Second task",
   exact: true,
 });
+await page.evaluate(() => document.fonts.ready);
+await handle.scrollIntoViewIfNeeded();
+await page.waitForTimeout(250);
 await handle.focus();
 await handle.press("Space");
 await expect(page.locator(".dragging")).toBeVisible();
@@ -182,6 +185,42 @@ await expect(
 ).toBeVisible();
 await page.getByRole("button", { name: "Back", exact: true }).click();
 await page.getByRole("button", { name: "Settings", exact: true }).click();
+const cdp = await page.context().newCDPSession(page);
+await cdp.send("DOM.enable");
+await cdp.send("CSS.enable");
+for (const font of ["Inter", "Lora", "Manrope", "Kalam"]) {
+  await page.getByRole("button", { name: font, exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: font, exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("h1")).toHaveCSS("font-family", new RegExp(font));
+  for (const weight of font === "Kalam" ? [400] : [400, 500, 600]) {
+    await page.evaluate(
+      async ({ font, weight }) => {
+        const faces = await document.fonts.load(`${weight} 16px "${font}"`);
+        if (!faces.length || faces.some((f) => f.status !== "loaded"))
+          throw Error("Font did not load locally");
+      },
+      { font, weight },
+    );
+  }
+  const { root } = await cdp.send("DOM.getDocument");
+  const { nodeId } = await cdp.send("DOM.querySelector", {
+    nodeId: root.nodeId,
+    selector: "h1",
+  });
+  const result = await cdp.send("CSS.getPlatformFontsForNode", { nodeId });
+  assert.ok(
+    result.fonts.some((f) => f.isCustomFont && f.familyName.startsWith(font)),
+    JSON.stringify(result),
+  );
+  const styles = await page.locator("h1").evaluate((el) => ({
+    family: getComputedStyle(el).fontFamily,
+    spacing: getComputedStyle(el).letterSpacing,
+  }));
+  assert.ok(styles.family.includes(font));
+  assert.notEqual(styles.spacing, "normal");
+}
 await page.getByRole("button", { name: "Kalam", exact: true }).click();
 await expect(
   page.getByRole("button", { name: "Kalam", exact: true }),

@@ -49,6 +49,7 @@ export default function Appearance({
               key={key}
               aria-pressed={s.font === key}
               disabled={busy}
+              className="font-choice"
               style={{ fontFamily: f.stack }}
               onClick={() => change({ ...s, font: key as typeof s.font })}
             >

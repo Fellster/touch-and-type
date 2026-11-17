@@ -37,7 +37,7 @@ and theme/font/highlight controls. Task titles edit inline, grouped tasks reorde
 with drag handles, and deletion can save the task to customer notes atomically.
 Customer changes require Save Changes; Done/Back confirm discarding unsaved edits.
 Existing storage/backup schemas and application identity are unchanged. Version code
-3 installs over the first test APK with the preserved signing key. Calendar/Gmail/
+4 installs over the first test APK with the preserved signing key. Calendar/Gmail/
 Drive integration is a later stage; this build remains fully offline.
 
 ## 1.2 refinements
@@ -49,6 +49,15 @@ with the native date/time picker still available by tapping the schedule. Draggi
 uses a floating overlay, larger handle, shorter activation distance, and immediate
 local order on drop while the transactional save completes. A failed save restores
 the previous order and displays an error. Reordering stays within date groups.
+
+## 1.3 typography correction
+
+Use the original shared font stacks for the full app and headings, match its heading
+tracking and font-choice weight, bundle the original 400/500/600 faces for Inter,
+Lora and Manrope and 400 for Kalam, and allow the same browser synthesis as the
+online app. Fontsource's complete language-subset definitions keep extended
+characters available locally. No remote stylesheet is requested. Browser checks
+verify each font really renders as a custom font and every requested face loads.
 
 ## Read-only migration from the online app
 

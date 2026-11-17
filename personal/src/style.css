@@ -1,8 +1,9 @@
 :root {
-  font-family: Inter, sans-serif;
+  font-family: var(--font-sans, Inter, system-ui, sans-serif);
+  line-height: 1.5;
   color: #382c25;
   background: #faf8f5;
-  font-synthesis: none;
+  font-synthesis: weight style;
 }
 * {
   box-sizing: border-box;
@@ -967,4 +968,24 @@ dialog {
   .task {
     transition: none !important;
   }
+}
+
+/* Match the online app's typography and let every control inherit its selection. */
+h1,
+h2,
+h3,
+.font-serif {
+  font-family: var(--font-serif, var(--font-sans));
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+.task-groups h2 {
+  font-weight: 400;
+}
+.task-title {
+  font-size: 16px;
+}
+.font-choice {
+  font-size: 16px;
+  font-weight: 500;
 }

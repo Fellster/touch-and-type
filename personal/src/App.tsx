@@ -82,12 +82,6 @@ const fonts = {
   manrope: "Manrope",
   kalam: "Kalam",
 };
-const fontFamily = {
-  inter: "Inter",
-  lora: "Lora",
-  manrope: "Manrope",
-  kalam: "Kalam",
-};
 const accents = {
   theme: "Theme",
   black: "Black",
@@ -339,12 +333,7 @@ export default function App() {
     );
   const s = notebook.settings;
   return (
-    <div
-      className="app"
-      data-theme={s.theme}
-      data-accent={s.accent}
-      style={{ fontFamily: fontFamily[s.font] }}
-    >
+    <div className="app" data-theme={s.theme} data-accent={s.accent}>
       <main>
         {!customerDraft && (
           <header className={c ? "record-header" : "page-header"}>
