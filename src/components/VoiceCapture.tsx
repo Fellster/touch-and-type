@@ -13,7 +13,9 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Mic, Square, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { startDictation, type SpeechSession } from "@/lib/voice/dictation";
+import { entryFromDictation } from "@/lib/voice/entry";
+import { Capacitor } from "@capacitor/core";
 import { toast } from "sonner";
 import { useLabels } from "@/hooks/useSettings";
 
@@ -72,107 +74,47 @@ export default function VoiceCapture({
   const [result, setResult] = useState<ParsedResult | null>(null);
   
 
-  const recRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const streamRef = useRef<MediaStream | null>(null);
-
-  useEffect(() => () => stopStream(), []);
-
-  const stopStream = () => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-    recRef.current = null;
-    chunksRef.current = [];
-  };
-
+  const sessionRef = useRef<SpeechSession | null>(null);
+  const mounted = useRef(true);
+  const active = useRef(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [entryText, setEntryText] = useState("");
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; sessionRef.current?.cancel(); };
+  }, []);
   const start = async () => {
+    if (active.current) return;
+    active.current = true;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      // Pick a MIME the browser supports.
-      const candidates = [
-        "audio/webm;codecs=opus",
-        "audio/webm",
-        "audio/mp4",
-        "audio/mpeg",
-      ];
-      let mime = "";
-      for (const c of candidates) {
-        if ((window as any).MediaRecorder && MediaRecorder.isTypeSupported(c)) {
-          mime = c;
-          break;
-        }
-      }
-      const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
-      chunksRef.current = [];
-      rec.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
-      };
-      rec.onstop = () => finish(mime || rec.mimeType || "audio/webm");
-      recRef.current = rec;
-      rec.start();
+      const session = startDictation();
+      sessionRef.current = session;
       setRecording(true);
-    } catch (e) {
-      console.error(e);
-      toast.error("Microphone access denied");
-    }
-  };
-
-  const stop = () => {
-    if (recRef.current && recRef.current.state !== "inactive") {
-      recRef.current.stop();
-    }
-    setRecording(false);
-  };
-
-  const finish = async (mime: string) => {
-    setProcessing(true);
-    try {
-      const blob = new Blob(chunksRef.current, { type: mime });
-      stopStream();
-      if (blob.size < 1200) {
-        toast.error("Recording too short — try again");
-        setProcessing(false);
-        return;
-      }
-      const form = new FormData();
-      form.append("audio", blob, `recording.${mime.includes("mp4") ? "mp4" : "webm"}`);
-      form.append("context", context);
-      form.append("now", new Date().toISOString());
-      form.append("tz", Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
-
-      const { data, error } = await supabase.functions.invoke("voice-parse", { body: form });
-      if (error) {
-        const details =
-          typeof (error as any)?.context?.text === "function"
-            ? await (error as any).context.text().catch(() => "")
-            : "";
-        console.error("voice-parse failed", error, details);
-        toast.error("Voice parsing failed");
-        setProcessing(false);
-        return;
-      }
-      const transcript = (data as any)?.transcript ?? "";
-      const parsed = (data as any)?.parsed ?? { intent: "unknown" };
+      const transcript = await session.result;
+      if (!mounted.current) return;
       if (!transcript) {
-        toast.error("Couldn't hear anything — try again");
-        setProcessing(false);
-        return;
+        toast.error("Couldn't hear anything. Try again or type your entry.");
+        setHelpOpen(true); return;
       }
-      setResult({ ...parsed, transcript });
-      setOpen(true);
+      setResult(entryFromDictation(transcript, context)); setOpen(true);
     } catch (e) {
-      console.error(e);
-      toast.error("Something went wrong");
+      if (mounted.current) {
+        toast.error(e instanceof Error ? e.message : "Could not start voice input.");
+        setHelpOpen(true);
+      }
     } finally {
-      setProcessing(false);
+      active.current = false; sessionRef.current = null;
+      if (mounted.current) { setRecording(false); setProcessing(false); }
     }
+  };
+  const stop = () => {
+    sessionRef.current?.stop(); setRecording(false); setProcessing(true);
   };
 
   const onClick = () => {
     if (processing) return;
     if (recording) stop();
-    else start();
+    else setHelpOpen(true);
   };
 
   return (
@@ -195,6 +137,26 @@ export default function VoiceCapture({
         )}
       </Button>
 
+      <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Voice entry</DialogTitle>
+            <DialogDescription>
+              {Capacitor.getPlatform() === "android"
+                ? "Uses on-device speech recognition. Review the text before saving."
+                : "Your browser's speech service may send audio online. You can also type below or use your keyboard microphone."}
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea aria-label="Voice entry text" placeholder="Type here, or use your keyboard microphone" value={entryText} onChange={e => setEntryText(e.target.value)} />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              if (!entryText.trim()) { toast.error("Enter some text first."); return; }
+              setResult(entryFromDictation(entryText, context)); setHelpOpen(false); setOpen(true);
+            }}>Review text</Button>
+            <Button onClick={() => { setHelpOpen(false); void start(); }}>Start dictation</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <ReviewDialog
         open={open}
         onOpenChange={setOpen}
@@ -220,6 +182,8 @@ function ReviewDialog({
   result: ParsedResult | null;
   onSave: (r: ParsedResult) => void | Promise<void>;
 }) {
+  const labels = useLabels();
+  const [saving, setSaving] = useState(false);
   const [draft, setDraft] = useState<ParsedResult | null>(result);
   useEffect(() => setDraft(result), [result]);
 
@@ -337,7 +301,7 @@ function ReviewDialog({
                   }
                 />
               </Field>
-              <Field label={`${useLabels().looking_for} (comma-separated)`} full>
+              <Field label={`${labels.looking_for} (comma-separated)`} full>
                 <Input
                   value={(draft.customer?.looking_for ?? []).join(", ")}
                   onChange={(e) =>
@@ -376,7 +340,13 @@ function ReviewDialog({
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => draft && onSave(draft)}>Save</Button>
+          <Button disabled={saving || !draft.transcript.trim()} onClick={async () => {
+            if (!draft || saving) return;
+            setSaving(true);
+            try { await onSave(draft); }
+            catch { toast.error("Couldn't save. Your entry is still here; try again."); }
+            finally { setSaving(false); }
+          }}>{saving ? "Saving…" : "Save"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
