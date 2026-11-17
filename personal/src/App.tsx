@@ -7,6 +7,25 @@ import {
   type ReactElement,
   type ReactNode,
 } from "react";
+import {
+  NotebookPen,
+  Settings,
+  ArrowLeft,
+  Search,
+  Plus,
+  Pencil,
+  ListTodo,
+  Mic,
+  Square,
+  ArrowUpDown,
+} from "lucide-react";
+import { applyTheme } from "../../src/hooks/useSettings";
+import { orderedTasks } from "./taskOrder";
+import TaskBoard from "./components/TaskBoard";
+import CustomerRead from "./components/CustomerRead";
+import CustomerEditor from "./components/CustomerEditor";
+import QuickCustomer from "./components/QuickCustomer";
+import Appearance from "./components/Appearance";
 import { Capacitor } from "@capacitor/core";
 import { NotedLogo } from "../../src/components/NotedLogo";
 import {
@@ -128,7 +147,9 @@ export default function App() {
     [fatal, setFatal] = useState(""),
     [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-  const [tab, setTab] = useState<"todo" | "customers" | "settings">("todo");
+  const [tab, setTab] = useState<
+    "todo" | "customers" | "settings" | "designers"
+  >("todo");
   const [selected, setSelected] = useState<string | null>(null),
     [query, setQuery] = useState("");
   const [sort, setSort] = useState("updated");
@@ -142,6 +163,20 @@ export default function App() {
     backupInput = useRef<HTMLInputElement>(null);
   const speech = useRef<SpeechSession | null>(null);
   const [listening, setListening] = useState(false);
+  const [addingCustomer, setAddingCustomer] = useState(false);
+  const [quickTitle, setQuickTitle] = useState(""),
+    [quickDue, setQuickDue] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<Todo | null>(null),
+    [deleteCustomerId, setDeleteCustomerId] = useState("");
+  const [inlineListening, setInlineListening] = useState(false);
+  useEffect(() => {
+    applyTheme(
+      notebook.settings.theme,
+      notebook.settings.accent,
+      notebook.settings.font,
+    );
+  }, [notebook.settings]);
+
   useEffect(() => {
     let active = true;
     loadNotebook()
@@ -195,7 +230,18 @@ export default function App() {
     (a, b) => Number(a.done) - Number(b.done) || a.position - b.position,
   );
   const tasks = selected
-    ? sortedTasks.filter((t) => t.customerId === selected)
+    ? sortedTasks.filter(
+        (t) =>
+          t.customerId === selected ||
+          (!t.customerId &&
+            c &&
+            t.title
+              .split("\n")
+              .some(
+                (line) =>
+                  line.trim().toLowerCase() === c.name.trim().toLowerCase(),
+              )),
+      )
     : sortedTasks;
   const newTodo = (customerId: string | null = null) =>
     setTaskDraft({
@@ -206,7 +252,7 @@ export default function App() {
       done: false,
       position: Math.max(-1, ...notebook.todos.map((t) => t.position)) + 1,
     });
-  async function dictate(target: "task" | "notes") {
+  async function dictate(target: "task" | "notes" | "quick") {
     if (speech.current) {
       speech.current.stop();
       return;
@@ -229,6 +275,8 @@ export default function App() {
           setCustomerDraft((d) =>
             d ? { ...d, notes: [d.notes, text].filter(Boolean).join("\n") } : d,
           );
+        else if (target === "quick")
+          setQuickTitle((value) => [value, text].filter(Boolean).join(" "));
         else
           setTaskDraft((d) =>
             d ? { ...d, title: [d.title, text].filter(Boolean).join(" ") } : d,
@@ -276,19 +324,6 @@ export default function App() {
       setMessage("Picture saved on this device.");
     });
   }
-  function reorder(id: string, delta: number) {
-    const ids = sortedTasks.map((t) => t.id),
-      index = ids.indexOf(id),
-      dest = index + delta;
-    if (dest < 0 || dest >= ids.length) return;
-    [ids[index], ids[dest]] = [ids[dest], ids[index]];
-    void act(() =>
-      commit((n) => ({
-        ...n,
-        todos: n.todos.map((t) => ({ ...t, position: ids.indexOf(t.id) })),
-      })),
-    );
-  }
   if (fatal)
     return (
       <main>
@@ -311,37 +346,93 @@ export default function App() {
       style={{ fontFamily: fontFamily[s.font] }}
     >
       <main>
-        <header>
-          <div className="brand">
-            <NotedLogo />
-            <div>
-              <h1>
-                Noted <small>Personal</small>
-              </h1>
-              <span className="subtle">Saved on this device</span>
+        {!customerDraft && (
+          <header className={c ? "record-header" : "page-header"}>
+            <div className="top-actions">
+              {(c || tab !== "todo") && (
+                <button
+                  className="icon-button back-button"
+                  aria-label="Back"
+                  onClick={() => {
+                    setSelected(null);
+                    setTab("todo");
+                    setAddingCustomer(false);
+                  }}
+                >
+                  <ArrowLeft size={20} />
+                </button>
+              )}
+              {c ? (
+                <>
+                  <button
+                    className="icon-button"
+                    aria-label="Edit customer"
+                    disabled={busy}
+                    onClick={() => {
+                      setMessage("");
+                      setCustomerDraft(structuredClone(c));
+                    }}
+                  >
+                    <Pencil size={20} />
+                  </button>
+                  <button
+                    className="icon-button"
+                    aria-label="Add to-do for this customer"
+                    disabled={busy}
+                    onClick={() => newTodo(c.id)}
+                  >
+                    <ListTodo size={20} />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    className="icon-button"
+                    aria-label="Customer notebook"
+                    onClick={() => {
+                      setTab("customers");
+                      setQuery("");
+                    }}
+                  >
+                    <NotebookPen size={20} />
+                  </button>
+                  <button
+                    className="icon-button"
+                    aria-label="Settings"
+                    onClick={() => setTab("settings")}
+                  >
+                    <Settings size={20} />
+                  </button>
+                </>
+              )}
             </div>
-          </div>
-          {selected && <button onClick={() => setSelected(null)}>Back</button>}
-        </header>
-        {!selected && (
-          <nav aria-label="Main navigation">
-            {(["todo", "customers", "settings"] as const).map((key) => (
-              <button
-                key={key}
-                aria-current={tab === key ? "page" : undefined}
-                onClick={() => {
-                  setTab(key);
-                  setQuery("");
-                }}
-              >
-                {key === "todo"
-                  ? "To-Do"
-                  : key === "customers"
-                    ? "Customers"
-                    : "Settings"}
-              </button>
-            ))}
-          </nav>
+            {!c && (
+              <>
+                <div className="brand">
+                  <NotedLogo />
+                  <h1>
+                    {tab === "todo"
+                      ? "To-Do"
+                      : tab === "customers"
+                        ? "Customers"
+                        : tab === "designers"
+                          ? "Designers"
+                          : "Settings"}
+                  </h1>
+                </div>
+                <p className="subtle">
+                  {tab === "todo"
+                    ? notebook.todos.filter((t) => !t.done).length +
+                      " open · " +
+                      notebook.todos.filter((t) => t.done).length +
+                      " done"
+                    : tab === "customers"
+                      ? notebook.customers.length + " customers"
+                      : "Noted Personal"}
+                </p>
+              </>
+            )}
+          </header>
         )}
         {message && (
           <div className="notice" role="status">
@@ -357,139 +448,142 @@ export default function App() {
             a backup before clearing browser data.
           </p>
         )}
-        {c ? (
-          <>
-            <div className="section-heading">
-              <h2>{c.name}</h2>
-              <button
-                aria-label="Edit customer"
-                disabled={busy}
-                onClick={() => setCustomerDraft(structuredClone(c))}
-              >
-                ✎ Edit
-              </button>
-            </div>
-            <section className="card details">
-              {c.phone && <a href={"tel:" + c.phone}>{c.phone}</a>}
-              {c.email && <a href={"mailto:" + c.email}>{c.email}</a>}
-              {!!c.designers.length && (
-                <p>
-                  <strong>Designers</strong>
-                  <br />
-                  {c.designers.join(", ")}
-                </p>
-              )}
-              {(c.shoeSize || c.width) && (
-                <p>
-                  <strong>Size / Width</strong>
-                  <br />
-                  {[c.shoeSize, c.width].filter(Boolean).join(" · ")}
-                </p>
-              )}
-              {!!c.wants.length && (
-                <p>
-                  <strong>Wants</strong>
-                  <br />
-                  {c.wants.join(", ")}
-                </p>
-              )}
-              {c.notes && (
-                <p className="pre">
-                  <strong>Customer Notes</strong>
-                  <br />
-                  {c.notes}
-                </p>
-              )}
-              {c.personalNotes && (
-                <p className="pre">
-                  <strong>My Notes</strong>
-                  <br />
-                  {c.personalNotes}
-                </p>
-              )}
-              {Object.keys(c.custom).length > 0 && (
-                <details>
-                  <summary>Additional information</summary>
-                  <pre>{JSON.stringify(c.custom, null, 2)}</pre>
-                </details>
-              )}
-            </section>
-            <div className="section-heading">
-              <h3>Pictures & Drawings</h3>
-              <div className="actions">
-                <button
-                  disabled={busy}
-                  onClick={() => photoInput.current?.click()}
-                >
-                  + Picture
-                </button>
-                <button disabled={busy} onClick={() => setDrawing(true)}>
-                  + Drawing
-                </button>
-              </div>
-            </div>
-            <div className="gallery">
-              {notebook.media
-                .filter((m) => m.customerId === c.id)
-                .map((m) => (
-                  <article className="card" key={m.id}>
-                    <button
-                      className="picture-button"
-                      aria-label={"Open " + m.kind}
-                      onClick={() => setPicture(m.data)}
-                    >
-                      <img src={m.data} alt={m.name || m.kind} />
-                    </button>
-                    {m.text && <p className="pre">{m.text}</p>}
-                    <button
-                      className="danger"
-                      disabled={busy}
-                      onClick={() => {
-                        if (confirm("Delete this " + m.kind + "?"))
-                          void act(() =>
-                            commit((n) => ({
-                              ...n,
-                              media: n.media.filter((x) => x.id !== m.id),
-                            })),
-                          );
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </article>
-                ))}
-            </div>
-          </>
+        {customerDraft ? (
+          <CustomerEditor
+            draft={customerDraft}
+            change={setCustomerDraft}
+            saved={notebook.customers.find((c) => c.id === customerDraft.id)}
+            busy={busy}
+            listening={listening}
+            error={message}
+            close={() => {
+              if (
+                JSON.stringify(customerDraft) !==
+                  JSON.stringify(
+                    notebook.customers.find((c) => c.id === customerDraft.id),
+                  ) &&
+                !confirm("Discard unsaved changes?")
+              )
+                return;
+              stopSpeech();
+              setCustomerDraft(null);
+            }}
+            save={() =>
+              void act(async () => {
+                if (!customerDraft.name.trim())
+                  throw new Error("Enter a customer name.");
+                const draft = {
+                  ...customerDraft,
+                  name: customerDraft.name.trim(),
+                  updatedAt: now(),
+                };
+                await commit((n) => ({
+                  ...n,
+                  customers: n.customers.map((c) =>
+                    c.id === draft.id ? draft : c,
+                  ),
+                }));
+                setCustomerDraft(draft);
+                setMessage("Customer changes saved");
+              })
+            }
+            remove={() => {
+              if (
+                confirm(
+                  "Delete this customer and their to-dos, pictures, and drawings?",
+                )
+              )
+                void act(async () => {
+                  await commit((n) => deleteCustomer(n, customerDraft.id));
+                  setCustomerDraft(null);
+                  setSelected(null);
+                  setTab("customers");
+                });
+            }}
+            todo={() => newTodo(customerDraft.id)}
+            dictate={() => void dictate("notes")}
+            photo={() => photoInput.current?.click()}
+            draw={() => setDrawing(true)}
+            media={notebook.media.filter(
+              (m) => m.customerId === customerDraft.id,
+            )}
+            fields={notebook.customFields}
+            openImage={setPicture}
+            deleteMedia={(id) => {
+              if (confirm("Delete this picture or drawing?"))
+                void act(() =>
+                  commit((n) => ({
+                    ...n,
+                    media: n.media.filter((m) => m.id !== id),
+                  })),
+                );
+            }}
+          />
+        ) : c ? (
+          <CustomerRead
+            customer={c}
+            media={notebook.media.filter((m) => m.customerId === c.id)}
+            fields={notebook.customFields}
+            openImage={setPicture}
+          />
         ) : tab === "customers" ? (
           <>
-            <div className="section-heading">
-              <h2>Customers</h2>
+            <div className="customer-list-actions">
               <button
                 className="primary"
                 disabled={busy}
-                onClick={() => setCustomerDraft(freshCustomer())}
+                onClick={() => {
+                  setMessage("");
+                  setAddingCustomer((value) => !value);
+                }}
               >
-                + Add customer
+                <Plus size={16} />
+                Add customer
               </button>
             </div>
-            <Field label="Search">
+            {addingCustomer && (
+              <QuickCustomer
+                busy={busy}
+                cancel={() => setAddingCustomer(false)}
+                save={async (name, phone, email) => {
+                  await act(async () => {
+                    const draft = { ...freshCustomer(), name, phone, email };
+                    await commit((n) => ({
+                      ...n,
+                      customers: [...n.customers, draft],
+                    }));
+                    setAddingCustomer(false);
+                    setSelected(draft.id);
+                    setCustomerDraft(draft);
+                    setMessage("");
+                  });
+                }}
+              />
+            )}
+            <div className="search-field">
+              <Search size={16} />
               <input
+                aria-label="Search customers"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Name, designer, size, notes…"
+                placeholder="Search name, phone, email, designer, or looking for"
               />
-            </Field>
-            <Field label="Sort">
-              <select value={sort} onChange={(e) => setSort(e.target.value)}>
-                <option value="updated">Recently updated</option>
-                <option value="az">A–Z</option>
-                <option value="za">Z–A</option>
+            </div>
+            <div className="sort-row">
+              <ArrowUpDown size={16} />
+              <select
+                aria-label="Sort customers"
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+              >
+                <option value="updated">Recently Updated</option>
+                <option value="az">Customers A–Z</option>
+                <option value="za">Customers Z–A</option>
               </select>
-            </Field>
+            </div>
             {!notebook.customers.length && (
-              <p>
-                Your notebook is ready. Add a customer, or restore your copy
-                from the online app in Settings.
+              <p className="empty-state">
+                No customers yet. Add your first customer above.
               </p>
             )}
             {notebook.customers
@@ -515,183 +609,226 @@ export default function App() {
                   : (sort === "za" ? -1 : 1) * a.name.localeCompare(b.name),
               )
               .map((c) => (
-                <button
-                  className="card customer-row"
-                  key={c.id}
-                  onClick={() => setSelected(c.id)}
-                >
-                  <strong>{c.name}</strong>
-                  <span className="subtle">
-                    {[c.phone, ...c.designers, c.shoeSize]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </span>
-                </button>
+                <article className="card customer-row" key={c.id}>
+                  <button
+                    className="customer-summary"
+                    onClick={() => setSelected(c.id)}
+                  >
+                    <strong>{c.name}</strong>
+                    <span className="subtle">
+                      {[
+                        ...c.designers,
+                        c.wants.length ? "Wants: " + c.wants.join(" · ") : "",
+                        c.shoeSize ? "Size " + c.shoeSize : "",
+                        c.phone || c.email,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                  </button>
+                  <button
+                    className="icon-button"
+                    aria-label={"Edit " + c.name}
+                    onClick={() => {
+                      setSelected(c.id);
+                      setMessage("");
+                      setCustomerDraft(structuredClone(c));
+                    }}
+                  >
+                    <Pencil size={16} />
+                  </button>
+                </article>
+              ))}
+          </>
+        ) : tab === "designers" ? (
+          <>
+            <div className="search-field">
+              <Search size={16} />
+              <input
+                aria-label="Search designers"
+                placeholder="Search designers…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
+            {[...new Set(notebook.customers.flatMap((c) => c.designers))]
+              .filter((d) => d.toLowerCase().includes(query.toLowerCase()))
+              .sort((a, b) => a.localeCompare(b))
+              .map((d) => (
+                <section key={d}>
+                  <h2>{d}</h2>
+                  {notebook.customers
+                    .filter((c) => c.designers.includes(d))
+                    .map((c) => (
+                      <button
+                        key={c.id}
+                        className="card customer-row"
+                        onClick={() => setSelected(c.id)}
+                      >
+                        {c.name}
+                      </button>
+                    ))}
+                </section>
               ))}
           </>
         ) : null}
-        {(c || tab === "todo") && (
+        {!customerDraft && (c || tab === "todo") && (
           <>
-            <div className="section-heading">
-              <h2>{c ? "To-Dos" : "To-Do"}</h2>
-              <div className="actions">
-                {!c && (
-                  <button
-                    disabled={busy}
-                    onClick={() => setCustomerDraft(freshCustomer())}
-                  >
-                    + Add customer
-                  </button>
-                )}
-                <button
-                  className="primary"
-                  disabled={busy}
-                  onClick={() => newTodo(c?.id ?? null)}
-                >
-                  + Add
-                </button>
-              </div>
-            </div>
-            {!tasks.length && <p>No to-dos yet.</p>}
-            {tasks.map((t) => (
-              <article
-                key={t.id}
-                className={"card task " + (t.done ? "done" : "")}
-              >
-                <input
-                  type="checkbox"
-                  aria-label={"Complete " + t.title}
-                  checked={t.done}
-                  disabled={busy}
-                  onChange={() =>
-                    void act(() =>
-                      commit((n) => ({
+            {!c && (
+              <>
+                <form
+                  className="quick-task"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!quickTitle.trim()) return;
+                    void act(async () => {
+                      const task: Todo = {
+                        id: newId(),
+                        customerId: null,
+                        title: quickTitle.trim(),
+                        due: quickDue ? new Date(quickDue).toISOString() : "",
+                        done: false,
+                        position:
+                          Math.max(
+                            -1,
+                            ...notebook.todos.map((t) => t.position),
+                          ) + 1,
+                      };
+                      await commit((n) => ({
                         ...n,
-                        todos: n.todos.map((x) =>
-                          x.id === t.id ? { ...x, done: !x.done } : x,
-                        ),
-                      })),
-                    )
-                  }
-                />
-                <div className="task-text">
-                  <button
-                    className="text-button"
-                    onClick={() => setTaskDraft({ ...t })}
-                  >
-                    {t.title}
-                  </button>
-                  {t.customerId && (
+                        todos: [...n.todos, task],
+                      }));
+                      setQuickTitle("");
+                      setQuickDue("");
+                    });
+                  }}
+                >
+                  <input
+                    aria-label="New task"
+                    value={quickTitle}
+                    placeholder="What needs doing?"
+                    onChange={(e) => setQuickTitle(e.target.value)}
+                  />
+                  <div className="quick-task-controls">
+                    <input
+                      type="datetime-local"
+                      aria-label="Due date and time"
+                      value={quickDue}
+                      onChange={(e) => setQuickDue(e.target.value)}
+                    />
                     <button
-                      className="text-button subtle"
-                      onClick={() => setSelected(t.customerId)}
-                    >
-                      {
-                        notebook.customers.find((c) => c.id === t.customerId)
-                          ?.name
+                      type="button"
+                      className="icon-button"
+                      aria-label={
+                        listening ? "Stop dictation" : "Add task by voice"
                       }
+                      onClick={() => void dictate("quick")}
+                    >
+                      {listening ? <Square size={18} /> : <Mic size={18} />}
                     </button>
-                  )}
-                  {t.due && (
-                    <span className="subtle">
-                      {new Date(t.due).toLocaleString()}
-                    </span>
-                  )}
-                </div>
-                <div className="order-buttons">
+                    <button
+                      className="primary"
+                      disabled={busy || listening || !quickTitle.trim()}
+                    >
+                      <Plus size={16} />
+                      Add
+                    </button>
+                  </div>
+                </form>
+                <div className="home-shortcuts">
                   <button
-                    aria-label={"Move up " + t.title}
-                    disabled={busy || sortedTasks[0].id === t.id || !!c}
-                    onClick={() => reorder(t.id, -1)}
+                    onClick={() => {
+                      setTab("customers");
+                      setAddingCustomer(true);
+                      setMessage("");
+                    }}
                   >
-                    ↑
+                    <Plus size={15} />
+                    Add customer
                   </button>
                   <button
-                    aria-label={"Move down " + t.title}
-                    disabled={busy || sortedTasks.at(-1)?.id === t.id || !!c}
-                    onClick={() => reorder(t.id, 1)}
+                    onClick={() => {
+                      setTab("designers");
+                      setQuery("");
+                    }}
                   >
-                    ↓
+                    <Search size={15} />
+                    Designer
+                  </button>
+                  <button
+                    onClick={() => {
+                      setTab("customers");
+                      setQuery("");
+                    }}
+                  >
+                    <NotebookPen size={15} />
+                    Customers
                   </button>
                 </div>
-              </article>
-            ))}
+              </>
+            )}
+            {!tasks.length && (
+              <p className="empty-state">
+                {c
+                  ? "No to-dos for this customer yet."
+                  : "Nothing yet. Add your first task above."}
+              </p>
+            )}
+            <TaskBoard
+              todos={tasks}
+              customers={notebook.customers}
+              busy={busy}
+              openCustomer={setSelected}
+              saveTitle={(t, title) =>
+                commit((n) => ({
+                  ...n,
+                  todos: n.todos.map((x) =>
+                    x.id === t.id ? { ...x, title } : x,
+                  ),
+                }))
+              }
+              toggle={(t) =>
+                void act(() =>
+                  commit((n) => ({
+                    ...n,
+                    todos: n.todos.map((x) =>
+                      x.id === t.id ? { ...x, done: !x.done } : x,
+                    ),
+                  })),
+                )
+              }
+              due={(t, due) =>
+                void act(async () => {
+                  await commit((n) => ({
+                    ...n,
+                    todos: n.todos.map((x) =>
+                      x.id === t.id ? { ...x, due } : x,
+                    ),
+                  }));
+                  setMessage("To-do rescheduled. Update your calendar");
+                })
+              }
+              remove={(t) => {
+                setPendingDelete(t);
+                setDeleteCustomerId(t.customerId ?? "");
+              }}
+              reorder={(ids) =>
+                void act(() =>
+                  commit((n) => ({ ...n, todos: orderedTasks(n.todos, ids) })),
+                )
+              }
+            />
           </>
         )}
         {!selected && tab === "settings" && (
           <>
-            <h2>Settings</h2>
-            <section className="card settings">
-              <Field label="Themes">
-                <select
-                  value={s.theme}
-                  disabled={busy}
-                  onChange={(e) =>
-                    void act(() =>
-                      commit((n) => ({
-                        ...n,
-                        settings: {
-                          ...n.settings,
-                          theme: e.target.value as typeof s.theme,
-                        },
-                      })),
-                    )
-                  }
-                >
-                  {Object.entries(names).map(([k, v]) => (
-                    <option key={k} value={k}>
-                      {v}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Highlight color">
-                <select
-                  value={s.accent}
-                  disabled={busy}
-                  onChange={(e) =>
-                    void act(() =>
-                      commit((n) => ({
-                        ...n,
-                        settings: {
-                          ...n.settings,
-                          accent: e.target.value as typeof s.accent,
-                        },
-                      })),
-                    )
-                  }
-                >
-                  {Object.entries(accents).map(([k, v]) => (
-                    <option key={k} value={k}>
-                      {v}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Fonts">
-                <select
-                  value={s.font}
-                  disabled={busy}
-                  onChange={(e) =>
-                    void act(() =>
-                      commit((n) => ({
-                        ...n,
-                        settings: {
-                          ...n.settings,
-                          font: e.target.value as typeof s.font,
-                        },
-                      })),
-                    )
-                  }
-                >
-                  {Object.entries(fonts).map(([k, v]) => (
-                    <option key={k} value={k}>
-                      {v}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            </section>
+            <Appearance
+              settings={s}
+              busy={busy}
+              change={(settings) =>
+                void act(() => commit((n) => ({ ...n, settings })))
+              }
+            />
             <h3>Backup & Restore</h3>
             <section className="card">
               <p>
@@ -768,208 +905,6 @@ export default function App() {
             e.target.value = "";
           }}
         />
-        {customerDraft && (
-          <Modal
-            title={
-              notebook.customers.some((c) => c.id === customerDraft.id)
-                ? "Edit customer"
-                : "Add customer"
-            }
-            close={() => {
-              if (!busy) {
-                stopSpeech();
-                setCustomerDraft(null);
-              }
-            }}
-          >
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                void act(async () => {
-                  const draft = {
-                    ...customerDraft,
-                    name: customerDraft.name.trim(),
-                    updatedAt: now(),
-                  };
-                  await commit((n) => ({
-                    ...n,
-                    customers: [
-                      ...n.customers.filter((c) => c.id !== draft.id),
-                      draft,
-                    ],
-                  }));
-                  setSelected(draft.id);
-                  stopSpeech();
-                  setCustomerDraft(null);
-                });
-              }}
-            >
-              <Field label="Name">
-                <input
-                  autoFocus
-                  required
-                  maxLength={300}
-                  value={customerDraft.name}
-                  onChange={(e) =>
-                    setCustomerDraft({ ...customerDraft, name: e.target.value })
-                  }
-                />
-              </Field>
-              <Field label="Phone">
-                <input
-                  type="tel"
-                  value={customerDraft.phone}
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    const d = raw.replace(/\D/g, "");
-                    setCustomerDraft({
-                      ...customerDraft,
-                      phone:
-                        /^[\d ()-]*$/.test(raw) && d.length <= 10
-                          ? [d.slice(0, 3), d.slice(3, 6), d.slice(6, 10)]
-                              .filter(Boolean)
-                              .join("-")
-                          : raw,
-                    });
-                  }}
-                />
-              </Field>
-              <Field label="Email">
-                <input
-                  type="email"
-                  value={customerDraft.email}
-                  onChange={(e) =>
-                    setCustomerDraft({
-                      ...customerDraft,
-                      email: e.target.value,
-                    })
-                  }
-                />
-              </Field>
-              <Field label="Designers (comma-separated)">
-                <input
-                  value={customerDraft.designers.join(", ")}
-                  onChange={(e) =>
-                    setCustomerDraft({
-                      ...customerDraft,
-                      designers: e.target.value.split(","),
-                    })
-                  }
-                  onBlur={() =>
-                    setCustomerDraft({
-                      ...customerDraft,
-                      designers: split(customerDraft.designers.join(",")),
-                    })
-                  }
-                />
-              </Field>
-              <div className="two-fields">
-                <Field label="Shoe size">
-                  <input
-                    value={customerDraft.shoeSize}
-                    onChange={(e) =>
-                      setCustomerDraft({
-                        ...customerDraft,
-                        shoeSize: e.target.value,
-                      })
-                    }
-                  />
-                </Field>
-                <Field label="Width">
-                  <input
-                    value={customerDraft.width}
-                    onChange={(e) =>
-                      setCustomerDraft({
-                        ...customerDraft,
-                        width: e.target.value,
-                      })
-                    }
-                  />
-                </Field>
-              </div>
-              <Field label="Wants (comma-separated)">
-                <input
-                  value={customerDraft.wants.join(", ")}
-                  onChange={(e) =>
-                    setCustomerDraft({
-                      ...customerDraft,
-                      wants: e.target.value.split(","),
-                    })
-                  }
-                  onBlur={() =>
-                    setCustomerDraft({
-                      ...customerDraft,
-                      wants: split(customerDraft.wants.join(",")),
-                    })
-                  }
-                />
-              </Field>
-              <Field label="Customer Notes">
-                <textarea
-                  rows={5}
-                  value={customerDraft.notes}
-                  onChange={(e) =>
-                    setCustomerDraft({
-                      ...customerDraft,
-                      notes: e.target.value,
-                    })
-                  }
-                />
-              </Field>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void dictate("notes")}
-              >
-                {listening ? "Stop dictation" : "Microphone"}
-              </button>
-              <Field label="My Notes">
-                <textarea
-                  rows={3}
-                  value={customerDraft.personalNotes}
-                  onChange={(e) =>
-                    setCustomerDraft({
-                      ...customerDraft,
-                      personalNotes: e.target.value,
-                    })
-                  }
-                />
-              </Field>
-              <p role="alert">{message}</p>
-              <div className="actions footer">
-                <button
-                  className="primary"
-                  disabled={busy || listening || !customerDraft.name.trim()}
-                >
-                  Save customer
-                </button>
-                {notebook.customers.some((c) => c.id === customerDraft.id) && (
-                  <button
-                    type="button"
-                    className="danger"
-                    disabled={busy}
-                    onClick={() => {
-                      if (
-                        confirm(
-                          "Delete this customer and their to-dos, pictures, and drawings?",
-                        )
-                      )
-                        void act(async () => {
-                          await commit((n) =>
-                            deleteCustomer(n, customerDraft.id),
-                          );
-                          setCustomerDraft(null);
-                          setSelected(null);
-                        });
-                    }}
-                  >
-                    Delete customer
-                  </button>
-                )}
-              </div>
-            </form>
-          </Modal>
-        )}
         {taskDraft && (
           <Modal
             title="To-do"
@@ -1072,6 +1007,72 @@ export default function App() {
                 )}
               </div>
             </form>
+          </Modal>
+        )}
+        {pendingDelete && (
+          <Modal
+            title="Delete task"
+            close={() => {
+              if (!busy) setPendingDelete(null);
+            }}
+          >
+            <p>Save this task to a customer's notes before deleting it?</p>
+            <div className="card pre">{pendingDelete.title}</div>
+            <Field label="Customer">
+              <select
+                value={deleteCustomerId}
+                onChange={(e) => setDeleteCustomerId(e.target.value)}
+              >
+                <option value="">Choose a customer</option>
+                {notebook.customers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <div className="actions">
+              <button
+                disabled={busy}
+                onClick={() =>
+                  void act(async () => {
+                    await commit((n) => ({
+                      ...n,
+                      todos: n.todos.filter((t) => t.id !== pendingDelete.id),
+                    }));
+                    setPendingDelete(null);
+                  })
+                }
+              >
+                Delete without saving
+              </button>
+              <button
+                className="primary"
+                disabled={busy || !deleteCustomerId}
+                onClick={() =>
+                  void act(async () => {
+                    await commit((n) => ({
+                      ...n,
+                      customers: n.customers.map((c) =>
+                        c.id === deleteCustomerId
+                          ? {
+                              ...c,
+                              notes: [c.notes, pendingDelete.title]
+                                .filter(Boolean)
+                                .join("\n"),
+                              updatedAt: now(),
+                            }
+                          : c,
+                      ),
+                      todos: n.todos.filter((t) => t.id !== pendingDelete.id),
+                    }));
+                    setPendingDelete(null);
+                  })
+                }
+              >
+                Save to notes & delete
+              </button>
+            </div>
           </Modal>
         )}
         {restore && (

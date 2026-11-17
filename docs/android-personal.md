@@ -28,6 +28,18 @@
   saving. Device/language support and microphone permission must be tested on the Pixel.
   Dates are chosen explicitly; the text is not sent to an AI provider for interpretation.
 
+## Original-app appearance (test build 1.1)
+
+The personal app now uses the original compact To-Do page and shortcuts, two-step
+Add Customer flow, read-only customer page with pencil to open the full editor,
+size/width row, designer and wants tags, separate drawings/photos, designer search,
+and theme/font/highlight controls. Task titles edit inline, grouped tasks reorder
+with drag handles, and deletion can save the task to customer notes atomically.
+Customer changes require Save Changes; Done/Back confirm discarding unsaved edits.
+Existing storage/backup schemas and application identity are unchanged. Version code
+2 installs over the first test APK with the preserved signing key. Calendar/Gmail/
+Drive integration is a later stage; this build remains fully offline.
+
 ## Read-only migration from the online app
 
 The online build adds `/personal-export`, linked from Settings. Sign in to the existing
@@ -57,16 +69,16 @@ cd android
 
 Use a full JDK 21 and Android SDK 36/build-tools 36.0.0. The developer workspace built
 an APK after installing those prerequisites. The browser test in
-`personal/tests/smoke.mjs` requires Playwright/Chromium and a production preview at
+`personal/tests/parity.mjs` requires Playwright/Chromium and a production preview at
 127.0.0.1:5182. Set PLAYWRIGHT_CHROMIUM_EXECUTABLE if Chromium is installed outside Playwright.
 The browser smoke test covers records/tasks, actual pictures and drawings, reload,
 backup/restore, restore protection, settings, ordering, and absence of external requests.
 
-Validation completed: 23 existing/voice/migration unit tests plus 7 local-storage and backup tests passed; both TypeScript checks and production builds passed. The browser smoke test passed. Native assembleDebug and APK signature verification passed; packaged permissions exclude INTERNET.
+Validation completed: 23 existing/voice/migration unit tests plus 10 local-storage, backup, and task-order tests passed; both TypeScript checks and production builds passed. The browser smoke test passed. Native assembleDebug and APK signature verification passed; packaged permissions exclude INTERNET.
 
 ## Remaining acceptance gates
 
-- Pixel: install alongside current Noted, create sample records, force-close/reopen,
+- Pixel: Backup and Restore confirmed by the user on the first test build. Install this update over Noted Personal Test (do not uninstall). Verify the original-app screens and create sample records, force-close/reopen,
   airplane-mode creation/edit/delete, photos/drawings, denied microphone permission,
   on-device speech/language availability, and Android document-picker backup/restore.
 - Verify the migration file contains the expected customer/task/media counts and
