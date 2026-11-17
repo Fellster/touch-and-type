@@ -1,0 +1,258 @@
+/* Compact type with unchanged touch targets. These styles belong only to Personal. */
+.app {
+  font-size: 14px;
+}
+.app .brand h1 {
+  font-size: 26px;
+}
+.app .task-title {
+  font-size: 14px;
+}
+.app .customer-summary strong {
+  font-size: 16px;
+}
+.app .customer-reading h1 {
+  font-size: 28px;
+}
+.app .customer-heading-input {
+  font-size: 28px !important;
+}
+.app .customer-reading h2,
+.app .editor-page h2 {
+  font-size: 20px;
+}
+.app .field input,
+.app .field textarea,
+.app .field select {
+  font-size: 14px;
+}
+.app .font-choice {
+  font-size: 14px;
+}
+.app.settings-page .brand h1 {
+  font-size: 22px;
+}
+.app.settings-page h2 {
+  font-size: 18px;
+}
+
+/* Hardcore Punk: an offline photocopied-paper asset, stencil headings and violet ink. */
+.app[data-theme="punk"] {
+  background: #101010 url("./assets/punk-paper.webp") center top / 100% 100dvh
+    repeat-y;
+}
+.app[data-theme="punk"] .brand h1,
+.app[data-theme="punk"] .task-groups h2 {
+  font-family: "Black Ops One", Impact, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #151515;
+  background: #f5f1e5;
+  padding: 4px 10px;
+  width: fit-content;
+  clip-path: polygon(
+    2% 4%,
+    21% 0,
+    42% 4%,
+    64% 0,
+    83% 3%,
+    98% 0,
+    100% 25%,
+    98% 49%,
+    100% 76%,
+    97% 98%,
+    75% 95%,
+    52% 100%,
+    32% 96%,
+    2% 100%,
+    0 76%,
+    2% 52%,
+    0 26%
+  );
+}
+.app[data-theme="punk"] .task-groups section {
+  position: relative;
+}
+.app[data-theme="punk"] .task-groups section::before {
+  content: "";
+  position: absolute;
+  top: 17px;
+  left: 145px;
+  right: 0;
+  border-top: 2px solid var(--color);
+}
+.app[data-theme="punk"] .card {
+  --ink: #171717;
+  --muted-foreground: 0 0% 32%;
+  background: #f5f1e5;
+  color: var(--ink);
+  border-color: #d8d2c5;
+  border-radius: 4px;
+}
+.app[data-theme="punk"] .card .subtle {
+  color: #605a50;
+}
+.app[data-theme="punk"] .task-actions .icon-button {
+  color: var(--color);
+}
+.app[data-theme="punk"] .card .drag-handle {
+  color: #605a50;
+}
+.app[data-theme="punk"] .card input,
+.app[data-theme="punk"] .card textarea,
+.app[data-theme="punk"] .card select {
+  background: #fffdf7;
+  color: #171717;
+}
+.app[data-theme="punk"] input:not([type="checkbox"]),
+.app[data-theme="punk"] textarea,
+.app[data-theme="punk"] select {
+  background: #171717;
+  color: #f5f1e5;
+}
+.app[data-theme="punk"] .card input:not([type="checkbox"]),
+.app[data-theme="punk"] .card textarea,
+.app[data-theme="punk"] .card select {
+  background: #fffdf7;
+  color: #171717;
+}
+.app[data-theme="punk"] .top-actions .icon-button {
+  color: var(--color);
+}
+.app[data-theme="punk"] .home-shortcuts button {
+  border-color: #e8e2d6;
+  border-radius: 4px;
+}
+.app[data-theme="punk"] .font-choice,
+.app[data-theme="punk"] .theme-option {
+  background: #131313;
+}
+.app[data-theme="punk"] button[aria-pressed="true"] {
+  background: hsl(var(--accent));
+}
+.app[data-theme="punk"] .notice {
+  background: #242126;
+  color: #f5f1e5;
+}
+.app[data-theme="punk"] .notice button {
+  background: #242126;
+}
+
+/* Gallery: a quiet white canvas, clean sans headings, open task rows. */
+.app[data-theme="gallery"] {
+  background: var(--paper);
+}
+.app[data-theme="gallery"] h1,
+.app[data-theme="gallery"] h2,
+.app[data-theme="gallery"] h3 {
+  font-family: Inter, system-ui, sans-serif;
+  letter-spacing: -0.025em;
+}
+.app[data-theme="gallery"] .task {
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  margin: 0;
+  padding: 14px 0;
+}
+.app[data-theme="gallery"] .task:last-child {
+  border-bottom: 1px solid var(--line);
+}
+.app[data-theme="gallery"] .task.task-overlay {
+  background: var(--surface);
+  box-shadow: 0 4px 16px #0002;
+}
+.app[data-theme="gallery"] .home-shortcuts button {
+  border: 0;
+  border-radius: 0;
+  padding-inline: 0;
+}
+.app[data-theme="gallery"] .task-actions .icon-button {
+  color: #52565b;
+}
+.app[data-theme="gallery"] .task .drag-handle {
+  color: #72767b;
+}
+.app[data-theme="gallery"] .task-groups h2 {
+  font-size: 17px;
+  font-weight: 500;
+}
+.app[data-theme="gallery"] .card {
+  box-shadow: none;
+}
+
+/* Botanical: soft sage stationery with line-drawn foliage outside the content. */
+.app[data-theme="botanical"] {
+  background-color: var(--paper);
+  background-image: url("./assets/botanical-leaves.svg");
+  background-repeat: no-repeat;
+  background-position: right bottom;
+  background-size: 190px;
+}
+.app[data-theme="botanical"] .home-shortcuts button {
+  background: hsl(var(--secondary));
+}
+.app[data-theme="botanical"] .task {
+  border-radius: 10px;
+  border-color: #9bae99;
+  box-shadow: none;
+}
+.app[data-theme="botanical"] .customer-link {
+  color: #244c2c;
+}
+.app[data-theme="botanical"] .task .drag-handle {
+  color: #526e50;
+}
+.app[data-theme="botanical"] .task-groups h2 {
+  color: #244c2c;
+}
+.app[data-theme="botanical"] .card {
+  background: #fdfdf8f5;
+}
+
+/* Menus and dialogs inherit the active theme even in Android's top layer. */
+html[data-theme="punk"] dialog {
+  --ink: #f5f1e5;
+  --surface: #171717;
+  color: var(--ink);
+  background: var(--surface);
+}
+
+.app[data-theme="punk"] button {
+  background: #171717;
+  color: #f5f1e5;
+}
+.app[data-theme="punk"] .card {
+  --secondary: 40 20% 86%;
+}
+.app[data-theme="punk"] .card button {
+  background: transparent;
+  color: #171717;
+}
+.app[data-theme="punk"] .card .task-actions .icon-button {
+  color: var(--color);
+}
+.app[data-theme="punk"] button.primary {
+  background: var(--color);
+  color: #fff;
+}
+.app[data-theme="punk"] button[aria-pressed="true"] {
+  background: hsl(var(--accent));
+}
+.app[data-theme="punk"] .subtle,
+.app[data-theme="punk"] .preview-note {
+  color: #c4beb3;
+}
+.app[data-theme="punk"] .card .subtle {
+  color: #605a50;
+}
+
+.app[data-theme="punk"] h2,
+.app[data-theme="punk"] h3 {
+  font-family: "Black Ops One", Impact, sans-serif;
+}
+.app[data-theme="punk"] .customer-reading h1 {
+  font-family: var(--font-sans);
+}

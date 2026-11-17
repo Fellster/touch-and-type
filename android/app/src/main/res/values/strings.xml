@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Noted Personal Test</string>
+    <string name="title_activity_main">Noted Personal Test</string>
+    <string name="package_name">com.keithfell.noted.personal</string>
+    <string name="custom_url_scheme">com.keithfell.noted.personal</string>
+</resources>
