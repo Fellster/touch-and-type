@@ -21,8 +21,7 @@
   revision checks, atomic writes, and errors rather than silently replacing corrupt data.
 - Complete JSON backups include media bytes and settings, a version and SHA-256
   integrity check. Android's document picker handles Save and Restore. Restore validates
-  the entire file before replacing the notebook and requires a current backup if it
-  would overwrite records. Maximum backup size is 64 MiB. Backups are not encrypted.
+  the entire file before replacing the notebook and asks for one restore confirmation before replacing records. Maximum backup size is 64 MiB. Backups are not encrypted.
 - Local fonts (Inter, Lora, Manrope, Kalam), themes, and highlight-aware logo.
 - On-device Android dictation, with no network speech fallback. Review text before
   saving. Device/language support and microphone permission must be tested on the Pixel.
@@ -37,7 +36,7 @@ and theme/font/highlight controls. Task titles edit inline, grouped tasks reorde
 with drag handles, and deletion can save the task to customer notes atomically.
 Customer changes require Save Changes; Done/Back confirm discarding unsaved edits.
 Existing storage/backup schemas and application identity are unchanged. Version code
-9 installs over the first test APK with the preserved signing key. Calendar/Gmail/
+10 installs over the first test APK with the preserved signing key. Calendar/Gmail/
 Drive integration is a later stage; this build remains fully offline.
 
 ## 1.2 refinements
@@ -190,3 +189,13 @@ and destination close failure. Restore errors explicitly explain empty/ZIP/incom
 files. JS requires native verification before confirming export or enabling overwrite.
 Pixel acceptance still required: create a new phone backup, confirm nonzero size and
 restore; then repeat through Drive and confirm upload.
+
+## 1.9 simple restore
+
+Remove the required extra export before restore at the user's request. The flow is
+Restore backup, choose a file, review counts and the replacement notice, Restore.
+Only a fully validated file can open this confirmation; replacement remains an
+atomic storage write with revision checks. The prior notebook is replaced, not
+merged; no automatic rollback copy is added. Independent backup remains available.
+Browser regression verifies restore is enabled for a valid file on a populated
+notebook, no extra-backup button appears, and invalid files still cannot restore.

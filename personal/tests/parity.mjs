@@ -325,16 +325,15 @@ await page
   .nth(1)
   .setInputFiles("/tmp/noted-v2-backup.json");
 await expect(
-  page.getByRole("button", { name: "Replace notebook", exact: true }),
-).toBeDisabled();
-const b = page.waitForEvent("download");
-await page
-  .getByRole("button", { name: "Back up current notebook first", exact: true })
-  .click();
-await b;
-await page
-  .getByRole("button", { name: "Replace notebook", exact: true })
-  .click();
+  page.getByRole("button", { name: "Restore", exact: true }),
+).toBeEnabled();
+await expect(
+  page.getByRole("button", {
+    name: "Back up current notebook first",
+    exact: true,
+  }),
+).toHaveCount(0);
+await page.getByRole("button", { name: "Restore", exact: true }).click();
 await expect(
   page.getByText("Notebook restored.", { exact: true }),
 ).toBeVisible();
@@ -516,7 +515,7 @@ await expect(
   page.getByText(/This backup file is empty \(0 bytes\)/),
 ).toBeVisible();
 await expect(
-  page.getByRole("button", { name: "Replace notebook", exact: true }),
+  page.getByRole("button", { name: "Restore", exact: true }),
 ).toHaveCount(0);
 await page
   .locator("input[type=file]")
@@ -530,7 +529,7 @@ await expect(
   page.getByText(/This backup is incomplete or is not a valid Noted backup/),
 ).toBeVisible();
 await expect(
-  page.getByRole("button", { name: "Replace notebook", exact: true }),
+  page.getByRole("button", { name: "Restore", exact: true }),
 ).toHaveCount(0);
 await page.getByRole("button", { name: "Back", exact: true }).click();
 await page.getByRole("button", { name: "Customers", exact: true }).click();

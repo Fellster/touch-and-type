@@ -151,8 +151,7 @@ export default function App() {
   const [sort, setSort] = useState("updated");
   const [customerDraft, setCustomerDraft] = useState<Customer | null>(null),
     [taskDraft, setTaskDraft] = useState<Todo | null>(null);
-  const [restore, setRestore] = useState<Notebook | null>(null),
-    [restoreBackedUp, setRestoreBackedUp] = useState(false);
+  const [restore, setRestore] = useState<Notebook | null>(null);
   const [drawing, setDrawing] = useState(false),
     [picture, setPicture] = useState<string | null>(null);
   const photoInput = useRef<HTMLInputElement>(null),
@@ -289,7 +288,6 @@ export default function App() {
   }
   async function readBackup(text: string) {
     setRestore(await decodeBackup(text));
-    setRestoreBackedUp(false);
   }
   async function pickRestore() {
     if (Capacitor.getPlatform() === "android")
@@ -1180,33 +1178,10 @@ export default function App() {
               {restore.todos.length} to-dos, and {restore.media.length}{" "}
               pictures/drawings.
             </p>
-            <p>
-              Restoring replaces this app's notebook. It does not change the
-              online app.
-            </p>
-            {!restoreBackedUp && (
-              <button
-                onClick={() =>
-                  void act(async () => {
-                    await backup();
-                    setRestoreBackedUp(true);
-                  })
-                }
-              >
-                Back up current notebook first
-              </button>
-            )}
+            <p>This will replace the current notebook with this backup.</p>
             <button
               className="primary"
-              disabled={
-                busy ||
-                (!restoreBackedUp &&
-                  !!(
-                    notebook.customers.length +
-                    notebook.todos.length +
-                    notebook.media.length
-                  ))
-              }
+              disabled={busy}
               onClick={() =>
                 void act(async () => {
                   await commit(() => restore);
@@ -1216,7 +1191,7 @@ export default function App() {
                 })
               }
             >
-              Replace notebook
+              Restore
             </button>
           </Modal>
         )}
