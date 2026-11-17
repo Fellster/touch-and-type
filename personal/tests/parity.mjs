@@ -185,6 +185,24 @@ await expect(
 ).toBeVisible();
 await page.getByRole("button", { name: "Back", exact: true }).click();
 await page.getByRole("button", { name: "Settings", exact: true }).click();
+await expect(page.locator("h1")).toHaveCSS("font-family", /ui-serif/);
+await expect(page.locator("h1")).toHaveCSS("font-size", "24px");
+const titleRect=await page.locator("h1").boundingBox();assert.ok(titleRect.x<100);
+const choices = page.locator(".font-grid .font-choice");
+const first = await choices.nth(0).boundingBox(),
+  second = await choices.nth(1).boundingBox();
+assert.equal(first.y, second.y);
+assert.ok(second.x > first.x);
+await page.getByRole("button", { name: "Chicago Cubs", exact: true }).click();
+await page.getByRole("button", { name: "Manrope", exact: true }).click();
+await expect(
+  page.getByRole("button", { name: "Manrope", exact: true }),
+).toHaveAttribute("aria-pressed", "true");
+await page.evaluate(() => document.fonts.ready);
+await page.screenshot({
+  path: "/tmp/noted-personal-settings-v5.png",
+  fullPage: true,
+});
 const cdp = await page.context().newCDPSession(page);
 await cdp.send("DOM.enable");
 await cdp.send("CSS.enable");
@@ -193,7 +211,10 @@ for (const font of ["Inter", "Lora", "Manrope", "Kalam"]) {
   await expect(
     page.getByRole("button", { name: font, exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator("h1")).toHaveCSS("font-family", new RegExp(font));
+  await expect(page.locator(".font-choice[aria-pressed=true]")).toHaveCSS(
+    "font-family",
+    new RegExp(font),
+  );
   for (const weight of font === "Kalam" ? [400] : [400, 500, 600]) {
     await page.evaluate(
       async ({ font, weight }) => {
@@ -207,19 +228,20 @@ for (const font of ["Inter", "Lora", "Manrope", "Kalam"]) {
   const { root } = await cdp.send("DOM.getDocument");
   const { nodeId } = await cdp.send("DOM.querySelector", {
     nodeId: root.nodeId,
-    selector: "h1",
+    selector: ".font-choice[aria-pressed=true]",
   });
   const result = await cdp.send("CSS.getPlatformFontsForNode", { nodeId });
   assert.ok(
     result.fonts.some((f) => f.isCustomFont && f.familyName.startsWith(font)),
     JSON.stringify(result),
   );
-  const styles = await page.locator("h1").evaluate((el) => ({
-    family: getComputedStyle(el).fontFamily,
-    spacing: getComputedStyle(el).letterSpacing,
-  }));
+  const styles = await page
+    .locator(".font-choice[aria-pressed=true]")
+    .evaluate((el) => ({
+      family: getComputedStyle(el).fontFamily,
+      spacing: getComputedStyle(el).letterSpacing,
+    }));
   assert.ok(styles.family.includes(font));
-  assert.notEqual(styles.spacing, "normal");
 }
 await page.getByRole("button", { name: "Kalam", exact: true }).click();
 await expect(

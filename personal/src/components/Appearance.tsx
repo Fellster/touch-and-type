@@ -43,7 +43,7 @@ export default function Appearance({
       </section>
       <section>
         <h2>Fonts</h2>
-        <div className="font-options">
+        <div className="font-options font-grid">
           {Object.entries(FONTS).map(([key, f]) => (
             <button
               key={key}
@@ -54,7 +54,6 @@ export default function Appearance({
               onClick={() => change({ ...s, font: key as typeof s.font })}
             >
               {f.label}
-              {s.font === key && <Check size={16} />}
             </button>
           ))}
         </div>

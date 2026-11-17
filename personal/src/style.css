@@ -989,3 +989,97 @@ h3,
   font-size: 16px;
   font-weight: 500;
 }
+
+/* The original font-serif utility uses the system serif stack, independently of body font. */
+:root {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  font-feature-settings: normal;
+  font-variation-settings: normal;
+}
+h1,
+h2,
+h3,
+.font-serif {
+  font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+}
+.settings-page main {
+  padding: 24px 20px 96px;
+}
+.settings-page .page-header {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 0;
+}
+.settings-page .top-actions {
+  display: contents;
+}
+.settings-page .top-actions > button:not(.back-button) {
+  display: none;
+}
+.settings-page .back-button {
+  margin: 0;
+}
+.settings-page .brand > svg,
+.settings-page .page-header > .subtle {
+  display: none;
+}
+.settings-page .brand h1 {
+  font-size: 24px;
+  line-height: 32px;
+}
+.settings-page main > section {
+  margin-top: 32px;
+}
+.settings-page main > section:first-of-type {
+  margin-top: 24px;
+}
+.settings-page h2 {
+  font-size: 20px;
+  line-height: 28px;
+  margin: 0 0 12px;
+}
+.settings-page button {
+  border-radius: 8px;
+}
+.settings-page .theme-option {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  gap: 8px;
+}
+.settings-page .theme-option > span {
+  min-width: 0;
+}
+.font-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.font-grid .font-choice {
+  background: transparent;
+  min-width: 0;
+}
+.font-grid .font-choice[aria-pressed="true"] {
+  background: hsl(var(--accent));
+}
+.app[data-theme="cubs"] {
+  background-color: var(--paper);
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 23px,
+    hsl(216 100% 34% / 0.09) 23px,
+    hsl(216 100% 34% / 0.09) 24px
+  );
+}
+.app[data-theme="yankees"] {
+  background-color: var(--paper);
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 23px,
+    hsl(220 57% 18% / 0.055) 23px,
+    hsl(220 57% 18% / 0.055) 24px
+  );
+}

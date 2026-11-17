@@ -37,7 +37,7 @@ and theme/font/highlight controls. Task titles edit inline, grouped tasks reorde
 with drag handles, and deletion can save the task to customer notes atomically.
 Customer changes require Save Changes; Done/Back confirm discarding unsaved edits.
 Existing storage/backup schemas and application identity are unchanged. Version code
-4 installs over the first test APK with the preserved signing key. Calendar/Gmail/
+5 installs over the first test APK with the preserved signing key. Calendar/Gmail/
 Drive integration is a later stage; this build remains fully offline.
 
 ## 1.2 refinements
@@ -110,3 +110,13 @@ Validation completed: 23 existing/voice/migration unit tests plus 10 local-stora
 - ChatGPT, Gemini, and Claude integrations are not connected. Optional AI would need
   a separate explicit online action, selected-record disclosure, and review-before-save;
   no provider keys are embedded in either app.
+
+## 1.4 screenshot parity correction
+
+The original compiled font-serif utility resolves to the system serif stack,
+independent of the selected body font. Match this actual cascade rather than just
+its settings variables. Settings uses its compact back/title row, 24px title,
+20px section headings, 14px theme labels, and two-column font choices. Text-size
+adjustment and 24px pinstripe spacing match the original stylesheet. Browser checks
+verify heading typography, font grid geometry, and the actual custom font used in
+each font choice.

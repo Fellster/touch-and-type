@@ -333,7 +333,13 @@ export default function App() {
     );
   const s = notebook.settings;
   return (
-    <div className="app" data-theme={s.theme} data-accent={s.accent}>
+    <div
+      className={
+        "app" + (tab === "settings" && !selected ? " settings-page" : "")
+      }
+      data-theme={s.theme}
+      data-accent={s.accent}
+    >
       <main>
         {!customerDraft && (
           <header className={c ? "record-header" : "page-header"}>
