@@ -28,7 +28,8 @@ import QuickCustomer from "./components/QuickCustomer";
 import Appearance from "./components/Appearance";
 import FieldNames from "./components/FieldNames";
 import { Capacitor } from "@capacitor/core";
-import { NotedLogo } from "../../src/components/NotedLogo";
+import NotedLogo from "./components/PersonalLogo";
+import { openCalendar, openEmail } from "./integrations";
 import {
   startDictation,
   type SpeechSession,
@@ -155,6 +156,7 @@ export default function App() {
   const [drawing, setDrawing] = useState(false),
     [picture, setPicture] = useState<string | null>(null);
   const photoInput = useRef<HTMLInputElement>(null),
+    cameraInput = useRef<HTMLInputElement>(null),
     backupInput = useRef<HTMLInputElement>(null);
   const speech = useRef<SpeechSession | null>(null);
   const [listening, setListening] = useState(false);
@@ -294,8 +296,11 @@ export default function App() {
       await act(async () => readBackup((await deviceStore.importFile()).text));
     else backupInput.current?.click();
   }
-  async function backup() {
-    await downloadBackup(await encodeBackup(current.current.notebook));
+  async function backup(destination: "phone" | "drive" = "phone") {
+    await downloadBackup(
+      await encodeBackup(current.current.notebook),
+      destination,
+    );
   }
   async function addPhoto(file: File) {
     if (!c) return;
@@ -500,6 +505,8 @@ export default function App() {
             todo={() => newTodo(customerDraft.id)}
             dictate={() => void dictate("notes")}
             photo={() => photoInput.current?.click()}
+            camera={() => cameraInput.current?.click()}
+            email={() => void act(() => openEmail(customerDraft.email))}
             draw={() => setDrawing(true)}
             media={notebook.media.filter(
               (m) => m.customerId === customerDraft.id,
@@ -519,6 +526,10 @@ export default function App() {
         ) : c ? (
           <CustomerRead
             labels={notebook.settings.labels}
+            photo={() => photoInput.current?.click()}
+            camera={() => cameraInput.current?.click()}
+            email={() => void act(() => openEmail(c.email))}
+            busy={busy}
             customer={c}
             media={notebook.media.filter((m) => m.customerId === c.id)}
             fields={notebook.customFields}
@@ -791,6 +802,14 @@ export default function App() {
             <TaskBoard
               todos={tasks}
               customers={notebook.customers}
+              calendar={(task, customer) =>
+                void act(async () => {
+                  await openCalendar(task, customer);
+                  setMessage(
+                    "Calendar draft opened. Save the event and choose a reminder in your calendar.",
+                  );
+                })
+              }
               busy={busy}
               openCustomer={setSelected}
               saveTitle={(t, title) =>
@@ -856,10 +875,15 @@ export default function App() {
                 uninstalling.
               </p>
               <p className="subtle">
+                Back up to phone creates a file on your phone. Google Drive
+                backup opens the location picker; choose your Drive folder and
+                tap Save. Restore backup can open either copy.
+              </p>
+              <p className="subtle">
                 Backup files contain private customer information and are not
                 encrypted. Choose a location you control.
               </p>
-              <div className="actions">
+              <div className="backup-actions">
                 <button
                   disabled={busy}
                   onClick={() =>
@@ -871,7 +895,20 @@ export default function App() {
                     })
                   }
                 >
-                  Save backup
+                  Back up to phone
+                </button>
+                <button
+                  disabled={busy}
+                  onClick={() =>
+                    void act(async () => {
+                      await backup("drive");
+                      setMessage(
+                        "Backup file saved to the selected location. Check Google Drive to confirm its upload has completed.",
+                      );
+                    })
+                  }
+                >
+                  Back up to Google Drive
                 </button>
                 <button disabled={busy} onClick={() => void pickRestore()}>
                   Restore backup
@@ -880,6 +917,20 @@ export default function App() {
               <p className="subtle">
                 {notebook.customers.length} customers · {notebook.todos.length}{" "}
                 to-dos · {notebook.media.length} pictures/drawings
+              </p>
+            </section>
+            <section className="card">
+              <h3>Google services</h3>
+              <p>
+                Tap the calendar icon on a scheduled to-do to open a Google
+                Calendar event draft. Tap a customer’s email to compose in
+                Gmail. You review and save or send in those apps.
+              </p>
+              <p className="subtle">
+                Calendar events are separate copies. If you reschedule or delete
+                a to-do, update your calendar too. Drive needs the Google Drive
+                app and an internet connection to finish uploading. Your
+                notebook and phone backups work offline.
               </p>
             </section>
             <section className="card">
@@ -921,6 +972,19 @@ export default function App() {
                   throw new Error("Backup exceeds the 64 MB limit.");
                 await readBackup(await file.text());
               });
+            e.target.value = "";
+          }}
+        />
+        <input
+          hidden
+          ref={cameraInput}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          aria-label="Take customer photo"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) void addPhoto(file);
             e.target.value = "";
           }}
         />
@@ -1037,6 +1101,9 @@ export default function App() {
           >
             <p>Save this task to a customer's notes before deleting it?</p>
             <div className="card pre">{pendingDelete.title}</div>
+            <p className="subtle">
+              If you added this to your calendar, remove that event there too.
+            </p>
             <Field label="Customer">
               <select
                 value={deleteCustomerId}

@@ -5,6 +5,7 @@ public class MainActivity extends BridgeActivity {
     @Override public void onCreate(Bundle state) {
         registerPlugin(NotedSpeechPlugin.class);
         registerPlugin(NotedNotebookPlugin.class);
+        registerPlugin(NotedActionsPlugin.class);
         super.onCreate(state);
     }
 }

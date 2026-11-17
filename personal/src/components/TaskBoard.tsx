@@ -17,7 +17,13 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Pencil, Trash2, CalendarClock } from "lucide-react";
+import {
+  GripVertical,
+  Pencil,
+  Trash2,
+  CalendarClock,
+  CalendarPlus,
+} from "lucide-react";
 import type { Customer, Todo } from "../model";
 export function taskGroups(todos: Todo[], now: Date) {
   const tomorrow = new Date(now);
@@ -66,6 +72,7 @@ type Props = {
   due: (t: Todo, date: string) => void;
   openCustomer: (id: string) => void;
   reorder: (ids: string[]) => Promise<void>;
+  calendar: (t: Todo, customer?: Customer) => void;
 };
 export default function TaskBoard(p: Props) {
   const groups = taskGroups(p.todos, new Date());
@@ -316,6 +323,16 @@ function Task(p: Props & { t: Todo }) {
         </label>
       </div>
       <div className="task-actions">
+        {t.due && !t.done && (
+          <button
+            className="icon-button"
+            aria-label={"Add " + t.title + " to calendar"}
+            disabled={p.busy}
+            onClick={() => p.calendar(t, customer)}
+          >
+            <CalendarPlus size={16} />
+          </button>
+        )}
         <button
           className="icon-button"
           aria-label={"Delete " + t.title}

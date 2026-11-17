@@ -13,4 +13,5 @@ import "@fontsource/kalam/400.css";
 import "@fontsource/black-ops-one/latin-400.css";
 import "./style.css";
 import "./themes.css";
+import "./photo-layout.css";
 createRoot(document.getElementById("root")!).render(<App />);

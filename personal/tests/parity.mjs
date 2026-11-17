@@ -309,7 +309,9 @@ await expect(
   page.getByRole("button", { name: "Blue highlights", exact: true }),
 ).toHaveAttribute("aria-pressed", "true");
 const dl = page.waitForEvent("download");
-await page.getByRole("button", { name: "Save backup", exact: true }).click();
+await page
+  .getByRole("button", { name: "Back up to phone", exact: true })
+  .click();
 await (await dl).saveAs("/tmp/noted-v2-backup.json");
 // Restore a previous-format notebook with text in the removed section.
 const backup = JSON.parse(await readFile("/tmp/noted-v2-backup.json", "utf8"));
@@ -402,7 +404,9 @@ await expect(
   page.getByLabel("Field name for Designers", { exact: true }),
 ).toHaveValue("Brands");
 const labelDownload = page.waitForEvent("download");
-await page.getByRole("button", { name: "Save backup", exact: true }).click();
+await page
+  .getByRole("button", { name: "Back up to phone", exact: true })
+  .click();
 await (await labelDownload).saveAs("/tmp/noted-labels-backup.json");
 const labelBackup = JSON.parse(
   await readFile("/tmp/noted-labels-backup.json", "utf8"),
@@ -444,6 +448,60 @@ await page
 await expect(
   page.getByLabel("Field name for Designers", { exact: true }),
 ).toHaveValue("Designers");
+await page
+  .getByRole("button", { name: "Back up to Google Drive", exact: true })
+  .click();
+await expect(
+  page.getByText(
+    "Google Drive backup is available in the Android app. You can save a phone backup here.",
+    { exact: true },
+  ),
+).toBeVisible();
+await page.getByRole("button", { name: "Back", exact: true }).click();
+await expect(
+  page.getByRole("button", {
+    name: "Add Second task revised to calendar",
+    exact: true,
+  }),
+).toBeVisible();
+await expect(page.locator(".brand svg path")).toHaveCount(1);
+await expect(page.locator(".brand svg circle")).toHaveCount(0);
+await expect(page.locator(".brand svg rect")).toHaveCount(0);
+await page.getByRole("button", { name: "Customers", exact: true }).click();
+await page.getByRole("button", { name: /^Maria Garcia/ }).click();
+await expect(
+  page.getByRole("button", { name: "Take photo", exact: true }),
+).toBeVisible();
+await expect(
+  page.getByRole("button", { name: "Add photo", exact: true }),
+).toBeVisible();
+await expect(
+  page.getByLabel("Take customer photo", { exact: true }),
+).toHaveAttribute("capture", "environment");
+await page.getByLabel("Take customer photo", { exact: true }).setInputFiles({
+  name: "camera-photo.jpg",
+  mimeType: "image/jpeg",
+  buffer: Buffer.from(png, "base64"),
+});
+await expect(page.locator(".media-grid-photo .media-tile")).toHaveCount(2);
+await expect(page.locator(".media-grid-photo img").first()).toHaveCSS(
+  "object-fit",
+  "cover",
+);
+await page
+  .getByRole("button", { name: "Open photo", exact: true })
+  .first()
+  .click();
+await expect(page.locator(".full-picture")).toBeVisible();
+await page.getByRole("button", { name: "Close dialog", exact: true }).click();
+await page.reload();
+await page.getByRole("button", { name: "Customers", exact: true }).click();
+await page.getByRole("button", { name: /^Maria Garcia/ }).click();
+await expect(page.locator(".media-grid-photo .media-tile")).toHaveCount(2);
+await page.screenshot({
+  path: "/tmp/noted-clean-photos-v8.png",
+  fullPage: true,
+});
 assert.deepEqual(errors, []);
 assert.deepEqual(external, []);
 console.log(

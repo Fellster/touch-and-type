@@ -37,7 +37,7 @@ and theme/font/highlight controls. Task titles edit inline, grouped tasks reorde
 with drag handles, and deletion can save the task to customer notes atomically.
 Customer changes require Save Changes; Done/Back confirm discarding unsaved edits.
 Existing storage/backup schemas and application identity are unchanged. Version code
-7 installs over the first test APK with the preserved signing key. Calendar/Gmail/
+8 installs over the first test APK with the preserved signing key. Calendar/Gmail/
 Drive integration is a later stage; this build remains fully offline.
 
 ## 1.2 refinements
@@ -93,7 +93,7 @@ an APK after installing those prerequisites. The browser test in
 The browser smoke test covers records/tasks, actual pictures and drawings, reload,
 backup/restore, restore protection, settings, ordering, and absence of external requests.
 
-Validation completed: 23 existing/voice/migration unit tests plus 15 local-storage, backup, appearance, and task-order tests passed; both TypeScript checks and production builds passed. The browser smoke test passed. Native assembleDebug and APK signature verification passed; packaged permissions exclude INTERNET.
+Validation completed: 23 existing/voice/migration unit tests plus 18 local-storage, backup, appearance, Android-draft, and task-order tests passed; both TypeScript checks and production builds passed. The browser smoke test passed. Native assembleDebug and APK signature verification passed; packaged permissions exclude INTERNET.
 
 ## Remaining acceptance gates
 
@@ -139,3 +139,35 @@ customer summaries and designer navigation/search. Customer data keys and values
 stay unchanged. Labels are stored locally and included in complete backups. Older
 notebooks/backups without labels open using original defaults; older app builds
 cannot restore backups containing this new settings field.
+
+## 1.7 camera, photo gallery, mark and Android Google actions
+
+Photos in customer reading/editing has separate Take photo and Upload controls.
+Capture uses Capacitor's built-in capture-enabled image file chooser, handing off
+to the installed camera through a FileProvider URI. Upload remains a standard file
+picker. No broad photo-library or camera permission is requested. Images normalize
+through the existing local resize/storage path. Clean square thumbnails open full
+images; edit mode keeps a small delete control. The in-app and Android launcher
+marks contain only the handwritten n, without paper, background badge or period.
+Android's launcher still supplies its normal adaptive icon background/mask.
+
+Scheduled to-dos offer an explicit Google Calendar draft (30-minute event titled
+Noted follow-up with the linked customer name), with fallback to another installed
+calendar. User reviews/saves and sets reminders there. Calendar events are copies,
+not synchronization: changes/deletion must be made in the calendar too. Customer
+email opens Gmail compose, falling back to another mail app; no message sends
+automatically and no notebook/attachment content is added. These native intents
+need no calendar/mail/account permissions and carry no tokens or keys.
+
+Back up to phone targets local storage. Back up to Google Drive checks for the Drive
+provider and opens Android's location picker starting at a writable Drive root
+when available; user chooses account/folder and confirms Save. Restore accepts
+phone or Drive files. Drive owns account sign-in, network upload and its completion;
+a successful document-provider write is not proof that upload has finished. No
+background/automatic Drive backup or direct Google API connection is implemented.
+The notebook remains offline and the APK still excludes INTERNET permission.
+
+Acceptance on Pixel: camera capture/cancellation, upload, new thumbnails/full view,
+Gmail compose, Google Calendar draft date/time and reminder, local backup/restore,
+and Drive write/upload confirmation plus restore. Native app handoffs cannot be
+fully confirmed by browser tests.

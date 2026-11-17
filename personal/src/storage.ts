@@ -7,7 +7,11 @@ interface DeviceStore {
     revision: number;
     payload: string;
   }): Promise<{ revision: number }>;
-  exportFile(options: { text: string; name: string }): Promise<void>;
+  exportFile(options: {
+    text: string;
+    name: string;
+    destination?: "phone" | "drive";
+  }): Promise<void>;
   importFile(): Promise<{ text: string }>;
 }
 export const deviceStore = registerPlugin<DeviceStore>("NotedNotebook");
@@ -90,10 +94,17 @@ export async function saveNotebook(
       );
   });
 }
-export async function downloadBackup(text: string) {
+export async function downloadBackup(
+  text: string,
+  destination: "phone" | "drive" = "phone",
+) {
   const name =
     "Noted-Personal-" + new Date().toISOString().slice(0, 10) + ".json";
-  if (native()) return deviceStore.exportFile({ text, name });
+  if (native()) return deviceStore.exportFile({ text, name, destination });
+  if (destination === "drive")
+    throw new Error(
+      "Google Drive backup is available in the Android app. You can save a phone backup here.",
+    );
   const url = URL.createObjectURL(
     new Blob([text], { type: "application/json" }),
   );

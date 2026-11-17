@@ -1,14 +1,23 @@
 import { customerNotes } from "../notes";
-import { Phone, Mail } from "lucide-react";
+import MediaGallery from "./MediaGallery";
+import { Phone, Mail, Camera, Upload } from "lucide-react";
 import type { Customer, Notebook } from "../model";
 export default function CustomerRead({
   customer: c,
   media,
   fields,
   labels,
+  photo,
+  camera,
+  email,
+  busy,
   openImage,
 }: {
   customer: Customer;
+  photo: () => void;
+  camera: () => void;
+  email: () => void;
+  busy: boolean;
   labels: Notebook["settings"]["labels"];
   media: Notebook["media"];
   fields: Notebook["customFields"];
@@ -45,10 +54,10 @@ export default function CustomerRead({
           </a>
         )}
         {c.email && (
-          <a href={"mailto:" + c.email}>
+          <button className="contact-email" onClick={email}>
             <Mail size={16} />
             {c.email}
-          </a>
+          </button>
         )}
       </div>
       {!!info.length && (
@@ -71,26 +80,38 @@ export default function CustomerRead({
       )}
       {(["drawing", "photo"] as const).map((kind) => {
         const items = media.filter((m) => m.kind === kind);
-        return items.length ? (
+        return items.length || kind === "photo" ? (
           <section
             key={kind}
             aria-label={kind === "drawing" ? "Drawings" : "Photos"}
           >
-            <h2>{kind === "drawing" ? "Drawings" : "Photos"}</h2>
-            <div className={"gallery " + kind}>
-              {items.map((m) => (
-                <article className="card" key={m.id}>
+            <div className="section-heading">
+              <h2>{kind === "drawing" ? "Drawings" : "Photos"}</h2>
+              {kind === "photo" && (
+                <div className="photo-actions">
                   <button
-                    className="picture-button"
-                    aria-label={"Open " + kind}
-                    onClick={() => openImage(m.data)}
+                    aria-label="Take photo"
+                    onClick={camera}
+                    disabled={busy}
                   >
-                    <img src={m.data} alt={m.name || kind} />
+                    <Camera size={16} />
+                    Take photo
                   </button>
-                  {m.text && <p className="pre">{m.text}</p>}
-                </article>
-              ))}
+                  <button
+                    aria-label="Add photo"
+                    onClick={photo}
+                    disabled={busy}
+                  >
+                    <Upload size={16} />
+                    Upload
+                  </button>
+                </div>
+              )}
             </div>
+            <MediaGallery items={items} kind={kind} open={openImage} />
+            {kind === "photo" && !items.length && (
+              <p className="subtle">No photos yet.</p>
+            )}
           </section>
         ) : null;
       })}

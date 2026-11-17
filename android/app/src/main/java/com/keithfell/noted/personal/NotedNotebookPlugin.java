@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
+import android.os.Build;
+import android.provider.DocumentsContract;
 import androidx.activity.result.ActivityResult;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -74,6 +76,24 @@ public class NotedNotebookPlugin extends Plugin {
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE); intent.setType("application/json");
         intent.putExtra(Intent.EXTRA_TITLE, call.getString("name", "Noted-Personal.json"));
+        if ("drive".equals(call.getString("destination", "phone"))) {
+            String authority = "com.google.android.apps.docs.storage";
+            if (getContext().getPackageManager().resolveContentProvider(authority, 0) == null) {
+                call.reject("Install Google Drive and sign in, then try again. Phone backup is also available."); return;
+            }
+            if (Build.VERSION.SDK_INT >= 26) {
+                try (Cursor roots = getContext().getContentResolver().query(DocumentsContract.buildRootsUri(authority), new String[]{DocumentsContract.Root.COLUMN_ROOT_ID, DocumentsContract.Root.COLUMN_FLAGS}, null, null, null)) {
+                    if (roots != null) while (roots.moveToNext()) {
+                        if ((roots.getInt(1) & DocumentsContract.Root.FLAG_SUPPORTS_CREATE) != 0) {
+                            intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, DocumentsContract.buildRootUri(authority, roots.getString(0))); break;
+                        }
+                    }
+                } catch (Exception ignored) { /* The picker still lets the user select Drive. */ }
+            }
+        } else {
+            intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
+            if (Build.VERSION.SDK_INT >= 26) intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Download"));
+        }
         startActivityForResult(call, intent, "exportResult");
     }
     @ActivityCallback private void exportResult(PluginCall call, ActivityResult result) {

@@ -7,10 +7,13 @@ import {
   Mic,
   Square,
   Trash2,
+  Camera,
+  Upload,
 } from "lucide-react";
 import { customerNotes } from "../notes";
 import { PhoneInput } from "../../../src/components/PhoneInput";
 import Tags from "./Tags";
+import MediaGallery from "./MediaGallery";
 import type { Customer, Notebook } from "../model";
 type Props = {
   draft: Customer;
@@ -26,6 +29,8 @@ type Props = {
   todo: () => void;
   dictate: () => void;
   photo: () => void;
+  camera: () => void;
+  email: () => void;
   draw: () => void;
   media: Notebook["media"];
   deleteMedia: (id: string) => void;
@@ -126,13 +131,15 @@ export default function CustomerEditor(p: Props) {
               value={c.email}
               onChange={(e) => update({ email: e.target.value })}
             />
-            <a
+            <button
+              type="button"
               className="icon-button"
               aria-label="Send email"
-              href={"mailto:" + c.email}
+              disabled={!c.email}
+              onClick={p.email}
             >
               <Mail size={17} />
-            </a>
+            </button>
           </div>
         </label>
         <div className="two-fields">
@@ -242,38 +249,48 @@ export default function CustomerEditor(p: Props) {
         <section key={kind}>
           <div className="section-heading">
             <h2>{kind === "drawing" ? "Drawings" : "Photos"}</h2>
-            <button
-              aria-label={kind === "drawing" ? "Add new drawing" : "Add photo"}
-              onClick={kind === "drawing" ? p.draw : p.photo}
-              disabled={p.busy}
-              className="primary"
-            >
-              + {kind === "drawing" ? "New" : "Add"}
-            </button>
+            {kind === "drawing" ? (
+              <button
+                aria-label="Add new drawing"
+                onClick={p.draw}
+                disabled={p.busy}
+                className="primary"
+              >
+                + New
+              </button>
+            ) : (
+              <div className="photo-actions">
+                <button
+                  aria-label="Take photo"
+                  onClick={p.camera}
+                  disabled={p.busy}
+                >
+                  <Camera size={16} />
+                  Take photo
+                </button>
+                <button
+                  aria-label="Add photo"
+                  onClick={p.photo}
+                  disabled={p.busy}
+                >
+                  <Upload size={16} />
+                  Upload
+                </button>
+              </div>
+            )}
           </div>
-          <div className="gallery">
-            {p.media
-              .filter((m) => m.kind === kind)
-              .map((m) => (
-                <article className="card" key={m.id}>
-                  <button
-                    className="picture-button"
-                    aria-label={"Open " + kind}
-                    onClick={() => p.openImage(m.data)}
-                  >
-                    <img src={m.data} alt={m.name || kind} />
-                  </button>
-                  {m.text && <p>{m.text}</p>}
-                  <button
-                    className="danger"
-                    disabled={p.busy}
-                    onClick={() => p.deleteMedia(m.id)}
-                  >
-                    Delete
-                  </button>
-                </article>
-              ))}
-          </div>
+          <MediaGallery
+            items={p.media.filter((m) => m.kind === kind)}
+            kind={kind}
+            open={p.openImage}
+            remove={p.deleteMedia}
+            busy={p.busy}
+          />
+          {kind === "photo" && !p.media.some((m) => m.kind === "photo") && (
+            <p className="subtle">
+              Take a photo or upload one from your phone.
+            </p>
+          )}
         </section>
       ))}
       <div className="save-row">
