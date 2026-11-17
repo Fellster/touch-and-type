@@ -229,3 +229,12 @@ schedule a task a few minutes ahead, leave/lock phone, open alert, snooze, compl
 reschedule/delete and verify old alert is gone. Repeat after restart and in airplane
 mode. Physical Pixel delivery remains to be tested. Android force-stop, Do Not
 Disturb and battery restrictions can prevent/delay delivery.
+
+## 1.11 calendar timestamp repair
+
+Read event begin/end values as Number rather than PluginCall.getDouble, which ignores
+Long values. Android's JSON decoder represents ordinary epoch millisecond timestamps
+as Long; the old implementation therefore rejected valid scheduled tasks. Validate
+finite, integral JavaScript-Date-range milliseconds and increasing begin/end before
+opening the same user-reviewed calendar draft. Native tests cover realistic Long,
+Double, Integer, missing/invalid/fractional dates and backwards/zero-length ranges.

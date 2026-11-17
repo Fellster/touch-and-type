@@ -25,15 +25,17 @@ public class NotedActionsPlugin extends Plugin {
         });
     }
     @PluginMethod public void calendar(PluginCall call) {
-        Double start = call.getDouble("start"), end = call.getDouble("end");
-        if (start == null || end == null || !Double.isFinite(start) || !Double.isFinite(end) || end <= start) {
+        final long[] times;
+        try {
+            times = CalendarTimes.range(call.getData().opt("start"), call.getData().opt("end"));
+        } catch (IllegalArgumentException error) {
             call.reject("Choose a date and time for this to-do first."); return;
         }
         Intent intent = new Intent(Intent.ACTION_INSERT).setData(CalendarContract.Events.CONTENT_URI);
         intent.putExtra(CalendarContract.Events.TITLE, call.getString("title", "Noted follow-up"));
         intent.putExtra(CalendarContract.Events.DESCRIPTION, call.getString("description", ""));
-        intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, start.longValue());
-        intent.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, end.longValue());
+        intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, times[0]);
+        intent.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, times[1]);
         launch(call, intent, "com.google.android.calendar", "Install a calendar app to add this event.");
     }
     @PluginMethod public void email(PluginCall call) {
