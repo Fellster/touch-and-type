@@ -16,6 +16,7 @@ import Designers from "./pages/Designers.tsx";
 import ManageFields from "./pages/ManageFields.tsx";
 import OAuthConsent from "./pages/OAuthConsent.tsx";
 import SettingsPage from "./pages/Settings.tsx";
+import PersonalExport from "./pages/PersonalExport.tsx";
 import TeamPrototype from "./pages/TeamPrototype.tsx";
 import Workspaces from "./pages/Workspaces.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/c/:id" element={<ProtectedRoute><CustomerDetail /></ProtectedRoute>} />
               <Route path="/fields" element={<ProtectedRoute><ManageFields /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+              <Route path="/personal-export" element={<ProtectedRoute><PersonalExport /></ProtectedRoute>} />
               <Route path="/team-prototype" element={<ProtectedRoute><TeamPrototype /></ProtectedRoute>} />
               <Route path="/workspaces" element={<ProtectedRoute><Workspaces /></ProtectedRoute>} />
               <Route path="/team-invite" element={<ProtectedRoute><Workspaces /></ProtectedRoute>} />
