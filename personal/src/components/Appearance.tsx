@@ -1,5 +1,6 @@
 import { Check } from "lucide-react";
-import { THEMES, ACCENTS, FONTS } from "../../../src/hooks/useSettings";
+import { ACCENTS, FONTS } from "../../../src/hooks/useSettings";
+import { THEMES, THEME_FONTS, type ThemeKey } from "../themes";
 import type { Notebook } from "../model";
 export default function Appearance({
   settings: s,
@@ -22,7 +23,12 @@ export default function Appearance({
               aria-pressed={s.theme === key}
               disabled={busy}
               onClick={() =>
-                change({ ...s, theme: key as typeof s.theme, accent: "theme" })
+                change({
+                  ...s,
+                  theme: key as typeof s.theme,
+                  accent: "theme",
+                  font: THEME_FONTS[key as ThemeKey] ?? s.font,
+                })
               }
             >
               <div className="swatches">

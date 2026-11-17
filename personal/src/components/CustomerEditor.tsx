@@ -14,6 +14,7 @@ import Tags from "./Tags";
 import type { Customer, Notebook } from "../model";
 type Props = {
   draft: Customer;
+  labels: Notebook["settings"]["labels"];
   change: (c: Customer) => void;
   saved: Customer | undefined;
   busy: boolean;
@@ -136,18 +137,18 @@ export default function CustomerEditor(p: Props) {
         </label>
         <div className="two-fields">
           <label className="field">
-            <span>Shoe size</span>
+            <span>{p.labels.shoe_size}</span>
             <input
-              aria-label="Shoe size"
+              aria-label={p.labels.shoe_size}
               inputMode="decimal"
               value={c.shoeSize}
               onChange={(e) => update({ shoeSize: e.target.value })}
             />
           </label>
           <label className="field">
-            <span>Width</span>
+            <span>{p.labels.width}</span>
             <select
-              aria-label="Width"
+              aria-label={p.labels.width}
               value={c.width}
               onChange={(e) => update({ width: e.target.value })}
             >
@@ -162,12 +163,12 @@ export default function CustomerEditor(p: Props) {
           </label>
         </div>
         <Tags
-          label="Designers"
+          label={p.labels.designers}
           values={c.designers}
           onChange={(designers) => update({ designers })}
         />
         <Tags
-          label="Wants"
+          label={p.labels.looking_for}
           values={c.wants}
           onChange={(wants) => update({ wants })}
         />

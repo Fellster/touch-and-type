@@ -186,8 +186,9 @@ await expect(
 await page.getByRole("button", { name: "Back", exact: true }).click();
 await page.getByRole("button", { name: "Settings", exact: true }).click();
 await expect(page.locator("h1")).toHaveCSS("font-family", /ui-serif/);
-await expect(page.locator("h1")).toHaveCSS("font-size", "24px");
-const titleRect=await page.locator("h1").boundingBox();assert.ok(titleRect.x<100);
+await expect(page.locator("h1")).toHaveCSS("font-size", "22px");
+const titleRect = await page.locator("h1").boundingBox();
+assert.ok(titleRect.x < 100);
 const choices = page.locator(".font-grid .font-choice");
 const first = await choices.nth(0).boundingBox(),
   second = await choices.nth(1).boundingBox();
@@ -242,6 +243,60 @@ for (const font of ["Inter", "Lora", "Manrope", "Kalam"]) {
       spacing: getComputedStyle(el).letterSpacing,
     }));
   assert.ok(styles.family.includes(font));
+}
+for (const theme of ["Hardcore Punk", "Gallery", "Botanical"]) {
+  await page.getByRole("button", { name: theme, exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: theme, exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await page.evaluate(() => document.fonts.ready);
+  await expect(page.locator(".task-title").first()).toHaveCSS(
+    "font-size",
+    "14px",
+  );
+  await expect(page.locator(".task-title")).toHaveText([
+    "Call Maria",
+    "Second task revised",
+  ]);
+  const themeKey = await page.locator(".app").getAttribute("data-theme");
+  if (themeKey === "punk") {
+    const colors = await page
+      .locator(".customer-link")
+      .first()
+      .evaluate((el) => ({
+        color: getComputedStyle(el).color,
+        background: getComputedStyle(el.closest(".card")).backgroundColor,
+      }));
+    assert.equal(colors.color, "rgb(23, 23, 23)");
+    assert.notEqual(colors.color, colors.background);
+  }
+  await page.screenshot({
+    path: `/tmp/noted-theme-${themeKey}.png`,
+    fullPage: true,
+  });
+  await page.reload();
+  await expect(page.locator(".app")).toHaveAttribute("data-theme", themeKey);
+  assert.equal(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > innerWidth,
+    ),
+    false,
+  );
+  await page.getByRole("button", { name: "Customers", exact: true }).click();
+  await page.getByRole("button", { name: /^Maria Garcia/ }).click();
+  await expect(
+    page.getByRole("button", { name: "Open photo", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Edit customer", exact: true })
+    .click();
+  await expect(page.getByLabel("Customer Notes", { exact: true })).toHaveValue(
+    "Call when size eight arrives.",
+  );
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
 }
 await page.getByRole("button", { name: "Kalam", exact: true }).click();
 await expect(
@@ -324,6 +379,71 @@ await expect(
     { exact: true },
   ),
 ).toBeVisible();
+await page.getByRole("button", { name: "Back", exact: true }).click();
+await page.getByRole("button", { name: "Settings", exact: true }).click();
+for (const [original, name] of [
+  ["Designers", "Brands"],
+  ["Shoe size", "Size"],
+  ["Width", "Fit"],
+  ["Wants", "Wishlist"],
+])
+  await page
+    .getByLabel("Field name for " + original, { exact: true })
+    .fill(name);
+await page
+  .getByRole("button", { name: "Save field names", exact: true })
+  .click();
+await expect(
+  page.getByRole("button", { name: "Save field names", exact: true }),
+).toBeDisabled();
+await page.reload();
+await page.getByRole("button", { name: "Settings", exact: true }).click();
+await expect(
+  page.getByLabel("Field name for Designers", { exact: true }),
+).toHaveValue("Brands");
+const labelDownload = page.waitForEvent("download");
+await page.getByRole("button", { name: "Save backup", exact: true }).click();
+await (await labelDownload).saveAs("/tmp/noted-labels-backup.json");
+const labelBackup = JSON.parse(
+  await readFile("/tmp/noted-labels-backup.json", "utf8"),
+);
+assert.deepEqual(JSON.parse(labelBackup.payload).settings.labels, {
+  designers: "Brands",
+  shoe_size: "Size",
+  width: "Fit",
+  looking_for: "Wishlist",
+});
+await page.getByRole("button", { name: "Back", exact: true }).click();
+await page.getByRole("button", { name: "Brands", exact: true }).click();
+await expect(
+  page.getByRole("heading", { name: "Brands", exact: true }),
+).toBeVisible();
+await expect(
+  page.getByRole("heading", { name: "Chanel", exact: true }),
+).toBeVisible();
+await page.getByRole("button", { name: "Back", exact: true }).click();
+await page.getByRole("button", { name: "Customers", exact: true }).click();
+await page.getByRole("button", { name: /^Maria Garcia/ }).click();
+for (const label of ["Size", "Fit", "Brands", "Wishlist"])
+  await expect(page.getByText(label, { exact: true })).toBeVisible();
+await page.getByRole("button", { name: "Edit customer", exact: true }).click();
+await expect(page.getByLabel("Size", { exact: true })).toHaveValue("8");
+await expect(page.getByLabel("Fit", { exact: true })).toHaveValue("Wide");
+await expect(
+  page.getByPlaceholder("Add brands…", { exact: true }),
+).toBeVisible();
+await expect(
+  page.getByPlaceholder("Add wishlist…", { exact: true }),
+).toBeVisible();
+await page.getByRole("button", { name: "Done", exact: true }).click();
+await page.getByRole("button", { name: "Back", exact: true }).click();
+await page.getByRole("button", { name: "Settings", exact: true }).click();
+await page
+  .getByRole("button", { name: "Reset field names", exact: true })
+  .click();
+await expect(
+  page.getByLabel("Field name for Designers", { exact: true }),
+).toHaveValue("Designers");
 assert.deepEqual(errors, []);
 assert.deepEqual(external, []);
 console.log(

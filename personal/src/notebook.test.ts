@@ -48,6 +48,46 @@ describe("complete notebook backup", () => {
     const restored = await decodeBackup(await encodeBackup(n));
     expect(restored).toEqual(n);
   });
+  it.each(["punk", "gallery", "botanical"] as const)(
+    "preserves %s appearance across backup and restore",
+    async (theme) => {
+      const n = sample();
+      n.settings.theme = theme;
+      expect(await decodeBackup(await encodeBackup(n))).toEqual(n);
+    },
+  );
+  it("round trips renamed labels without changing customer values", async () => {
+    const n = sample(),
+      customers = structuredClone(n.customers);
+    n.settings.labels = {
+      designers: "Brands",
+      shoe_size: "Size",
+      width: "Fit",
+      looking_for: "Wishlist",
+    };
+    const restored = await decodeBackup(await encodeBackup(n));
+    expect(restored.settings.labels).toEqual(n.settings.labels);
+    expect(restored.customers).toEqual(customers);
+  });
+  it("opens older backups without labels using the original field names", async () => {
+    const backup = JSON.parse(await encodeBackup(sample())),
+      n = JSON.parse(backup.payload);
+    delete n.settings.labels;
+    backup.payload = JSON.stringify(n);
+    backup.sha256 = Array.from(
+      new Uint8Array(
+        await crypto.subtle.digest(
+          "SHA-256",
+          new TextEncoder().encode(backup.payload),
+        ),
+      ),
+    )
+      .map((x) => x.toString(16).padStart(2, "0"))
+      .join("");
+    const restored = await decodeBackup(JSON.stringify(backup));
+    expect(restored.settings.labels.designers).toBe("Designers");
+    expect(restored.customers).toEqual(n.customers);
+  });
   it("rejects a changed file even when it remains valid JSON", async () => {
     const backup = JSON.parse(await encodeBackup(sample()));
     backup.payload = backup.payload.replace("Maria", "Other");

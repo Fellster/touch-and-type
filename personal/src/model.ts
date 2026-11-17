@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DEFAULT_LABELS } from "../../src/hooks/useSettings";
 const id = z.string().min(1).max(100);
 const strings = z.array(z.string()).max(1000);
 const stamp = z.string().datetime({ offset: true });
@@ -50,10 +51,28 @@ export const notebookSchema = z
     media: z.array(media).max(10000),
     settings: z
       .object({
-        theme: z.enum(["warm", "paper", "cubs", "bears", "yankees"]),
+        theme: z.enum([
+          "warm",
+          "paper",
+          "cubs",
+          "bears",
+          "yankees",
+          "punk",
+          "gallery",
+          "botanical",
+        ]),
         accent: z.enum(["theme", "black", "blue", "green", "red"]),
         font: z.enum(["inter", "lora", "manrope", "kalam"]),
         calendar: z.enum(["google", "apple", "outlook"]),
+        labels: z
+          .object({
+            designers: z.string().trim().min(1).max(40),
+            shoe_size: z.string().trim().min(1).max(40),
+            width: z.string().trim().min(1).max(40),
+            looking_for: z.string().trim().min(1).max(40),
+          })
+          .strict()
+          .default({ ...DEFAULT_LABELS }),
       })
       .strict(),
     // Preserve custom-field definitions from the online notebook, including fields not yet rendered.
@@ -94,6 +113,7 @@ export const emptyNotebook = (): Notebook => ({
     accent: "theme",
     font: "inter",
     calendar: "google",
+    labels: { ...DEFAULT_LABELS },
   },
 });
 export const MAX_BACKUP_BYTES = 64 * 1024 * 1024;

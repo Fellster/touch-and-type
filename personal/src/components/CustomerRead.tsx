@@ -5,18 +5,20 @@ export default function CustomerRead({
   customer: c,
   media,
   fields,
+  labels,
   openImage,
 }: {
   customer: Customer;
+  labels: Notebook["settings"]["labels"];
   media: Notebook["media"];
   fields: Notebook["customFields"];
   openImage: (url: string) => void;
 }) {
   const info = [
-    ["Shoe size", c.shoeSize],
-    ["Width", c.width],
-    ["Designers", c.designers.join(" · ")],
-    ["Wants", c.wants.join(" · ")],
+    [labels.shoe_size, c.shoeSize],
+    [labels.width, c.width],
+    [labels.designers, c.designers.join(" · ")],
+    [labels.looking_for, c.wants.join(" · ")],
     ...Object.entries(c.custom).map(([key, value]) => [
       String(
         fields.find((f) => f.key === key)?.label ?? key.replace(/_/g, " "),

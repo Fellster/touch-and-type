@@ -19,13 +19,14 @@ import {
   Square,
   ArrowUpDown,
 } from "lucide-react";
-import { applyTheme } from "../../src/hooks/useSettings";
+import { applyTheme } from "./themes";
 import { orderedTasks } from "./taskOrder";
 import TaskBoard from "./components/TaskBoard";
 import CustomerRead from "./components/CustomerRead";
 import CustomerEditor from "./components/CustomerEditor";
 import QuickCustomer from "./components/QuickCustomer";
 import Appearance from "./components/Appearance";
+import FieldNames from "./components/FieldNames";
 import { Capacitor } from "@capacitor/core";
 import { NotedLogo } from "../../src/components/NotedLogo";
 import {
@@ -411,7 +412,7 @@ export default function App() {
                       : tab === "customers"
                         ? "Customers"
                         : tab === "designers"
-                          ? "Designers"
+                          ? notebook.settings.labels.designers
                           : "Settings"}
                   </h1>
                 </div>
@@ -446,6 +447,7 @@ export default function App() {
         {customerDraft ? (
           <CustomerEditor
             draft={customerDraft}
+            labels={notebook.settings.labels}
             change={setCustomerDraft}
             saved={notebook.customers.find((c) => c.id === customerDraft.id)}
             busy={busy}
@@ -516,6 +518,7 @@ export default function App() {
           />
         ) : c ? (
           <CustomerRead
+            labels={notebook.settings.labels}
             customer={c}
             media={notebook.media.filter((m) => m.customerId === c.id)}
             fields={notebook.customFields}
@@ -613,8 +616,16 @@ export default function App() {
                     <span className="subtle">
                       {[
                         ...c.designers,
-                        c.wants.length ? "Wants: " + c.wants.join(" · ") : "",
-                        c.shoeSize ? "Size " + c.shoeSize : "",
+                        c.wants.length
+                          ? notebook.settings.labels.looking_for +
+                            ": " +
+                            c.wants.join(" · ")
+                          : "",
+                        c.shoeSize
+                          ? notebook.settings.labels.shoe_size +
+                            " " +
+                            c.shoeSize
+                          : "",
                         c.phone || c.email,
                       ]
                         .filter(Boolean)
@@ -640,8 +651,14 @@ export default function App() {
             <div className="search-field">
               <Search size={16} />
               <input
-                aria-label="Search designers"
-                placeholder="Search designers…"
+                aria-label={
+                  "Search " + notebook.settings.labels.designers.toLowerCase()
+                }
+                placeholder={
+                  "Search " +
+                  notebook.settings.labels.designers.toLowerCase() +
+                  "…"
+                }
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
@@ -748,7 +765,9 @@ export default function App() {
                     }}
                   >
                     <Search size={15} />
-                    Designer
+                    {notebook.settings.labels.designers === "Designers"
+                      ? "Designer"
+                      : notebook.settings.labels.designers}
                   </button>
                   <button
                     onClick={() => {
@@ -820,6 +839,13 @@ export default function App() {
               busy={busy}
               change={(settings) =>
                 void act(() => commit((n) => ({ ...n, settings })))
+              }
+            />
+            <FieldNames
+              labels={s.labels}
+              busy={busy}
+              save={(labels) =>
+                commit((n) => ({ ...n, settings: { ...n.settings, labels } }))
               }
             />
             <h3>Backup & Restore</h3>

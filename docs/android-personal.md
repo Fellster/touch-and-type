@@ -37,7 +37,7 @@ and theme/font/highlight controls. Task titles edit inline, grouped tasks reorde
 with drag handles, and deletion can save the task to customer notes atomically.
 Customer changes require Save Changes; Done/Back confirm discarding unsaved edits.
 Existing storage/backup schemas and application identity are unchanged. Version code
-5 installs over the first test APK with the preserved signing key. Calendar/Gmail/
+7 installs over the first test APK with the preserved signing key. Calendar/Gmail/
 Drive integration is a later stage; this build remains fully offline.
 
 ## 1.2 refinements
@@ -93,7 +93,7 @@ an APK after installing those prerequisites. The browser test in
 The browser smoke test covers records/tasks, actual pictures and drawings, reload,
 backup/restore, restore protection, settings, ordering, and absence of external requests.
 
-Validation completed: 23 existing/voice/migration unit tests plus 10 local-storage, backup, and task-order tests passed; both TypeScript checks and production builds passed. The browser smoke test passed. Native assembleDebug and APK signature verification passed; packaged permissions exclude INTERNET.
+Validation completed: 23 existing/voice/migration unit tests plus 15 local-storage, backup, appearance, and task-order tests passed; both TypeScript checks and production builds passed. The browser smoke test passed. Native assembleDebug and APK signature verification passed; packaged permissions exclude INTERNET.
 
 ## Remaining acceptance gates
 
@@ -120,3 +120,22 @@ its settings variables. Settings uses its compact back/title row, 24px title,
 adjustment and 24px pinstripe spacing match the original stylesheet. Browser checks
 verify heading typography, font grid geometry, and the actual custom font used in
 each font choice.
+
+## 1.5 additional personal themes and compact text
+
+Add Hardcore Punk (black/bone, blue-violet, bundled stencil face and photocopy
+background), Gallery (monochrome, sans headings and open task rows), and Botanical
+(sage, forest green and local vector foliage) only to the separate personal app.
+Existing themes and font choices remain. Body/task text is reduced to 14px, customer
+names to 28px, Settings title to 22px, without reducing touch targets. New theme keys
+round-trip through the same version-1 backup format; older test builds should not
+be used to restore backups with the new themes. No customer data migration occurs.
+
+## 1.6 editable field names
+
+Settings has Field names with editable Designers, Shoe size, Width and Wants labels,
+Save field names, and Reset. Labels apply to customer reading/editing, tag entry,
+customer summaries and designer navigation/search. Customer data keys and values
+stay unchanged. Labels are stored locally and included in complete backups. Older
+notebooks/backups without labels open using original defaults; older app builds
+cannot restore backups containing this new settings field.
