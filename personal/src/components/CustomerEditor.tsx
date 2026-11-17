@@ -22,7 +22,6 @@ type Props = {
   saved: Customer | undefined;
   busy: boolean;
   listening: boolean;
-  error: string;
   save: () => void;
   close: () => void;
   remove: () => void;
@@ -89,11 +88,6 @@ export default function CustomerEditor(p: Props) {
           {p.busy ? "Saving…" : "Save Changes"}
         </button>
       </div>
-      {p.error && (
-        <p role="alert" className="notice">
-          {p.error}
-        </p>
-      )}
       <section className="card customer-fields">
         <label className="field">
           <span>Phone</span>

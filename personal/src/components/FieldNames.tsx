@@ -6,13 +6,14 @@ export default function FieldNames({
   labels,
   busy,
   save,
+  reportError,
 }: {
   labels: Labels;
   busy: boolean;
   save: (labels: Labels) => Promise<void>;
+  reportError: (text: string) => void;
 }) {
-  const [draft, setDraft] = useState(labels),
-    [error, setError] = useState("");
+  const [draft, setDraft] = useState(labels);
   useEffect(() => setDraft(labels), [labels]);
   const keys = Object.keys(DEFAULT_LABELS) as FieldKey[];
   const valid = keys.every(
@@ -20,11 +21,10 @@ export default function FieldNames({
   );
   const dirty = keys.some((k) => draft[k] !== labels[k]);
   const persist = async (next: Labels) => {
-    setError("");
     try {
       await save(next);
     } catch {
-      setError("Could not save field names. Your changes are still here.");
+      reportError("Could not save field names. Your changes are still here.");
     }
   };
   return (
@@ -68,7 +68,6 @@ export default function FieldNames({
             />
           </label>
         ))}
-        {error && <p role="alert">{error}</p>}
         <button className="primary" disabled={busy || !valid || !dirty}>
           Save field names
         </button>

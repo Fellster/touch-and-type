@@ -238,3 +238,18 @@ as Long; the old implementation therefore rejected valid scheduled tasks. Valida
 finite, integral JavaScript-Date-range milliseconds and increasing begin/end before
 opening the same user-reviewed calendar draft. Native tests cover realistic Long,
 Double, Integer, missing/invalid/fractional dates and backwards/zero-length ranges.
+
+## 1.12 quiet bottom messages
+
+Replace all in-flow action banners and repeated editor messages with a single compact,
+theme-colored bottom toast. Short confirmations expire after four seconds; longer
+instructions get seven seconds. Errors stay until dismissed. Pause dismissal while
+focused/hovered or backgrounded, restarting on resume so a calendar handoff does not
+consume the confirmation before the user returns. Repeated messages reset timing.
+Calendar success is simply Calendar opened. Message styling respects reduced motion,
+safe-area spacing, wrapping and readable scroll for unusually long errors. Render
+inside an active modal so alerts stay visible/dismissible above the dialog layer.
+Field-name, task-order, inline edit and drawing failures use the same error surface.
+No notebook data or backup format change. Automated tests cover timers, repeated
+messages, error persistence, focus and modal placement; browser checks cover fixed
+position, bottom placement, auto-dismiss and no page movement.

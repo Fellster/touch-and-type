@@ -27,6 +27,7 @@ import CustomerEditor from "./components/CustomerEditor";
 import QuickCustomer from "./components/QuickCustomer";
 import Appearance from "./components/Appearance";
 import FieldNames from "./components/FieldNames";
+import Feedback, { type FeedbackMessage } from "./components/Feedback";
 import Reminders from "./components/Reminders";
 import {
   isAndroid,
@@ -151,7 +152,11 @@ export default function App() {
   const [ready, setReady] = useState(false),
     [fatal, setFatal] = useState(""),
     [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
+  const [notice, setNotice] = useState<FeedbackMessage | null>(null);
+  function setMessage(text: string, tone: "info" | "error" = "info") {
+    setNotice(text ? { id: crypto.randomUUID(), text, tone } : null);
+  }
+  function reportError(text: string) { setMessage(text, "error"); }
   const [tab, setTab] = useState<
     "todo" | "customers" | "settings" | "designers"
   >("todo");
@@ -215,7 +220,7 @@ export default function App() {
     if (!ready || !isAndroid()) return;
     const refresh = () => {
       void syncReminders(current.current.notebook).catch(() =>
-        setMessage(
+        reportError(
           "Your notebook is saved, but reminders could not be updated. Reopen Noted and check Notifications in Settings.",
         ),
       );
@@ -326,7 +331,7 @@ export default function App() {
       await action();
     } catch (e) {
       if (e instanceof Error && e.message === "Canceled") return;
-      setMessage(
+      reportError(
         e instanceof Error
           ? e.message
           : "Could not complete that action. Your saved records are preserved.",
@@ -441,7 +446,7 @@ export default function App() {
           },
         ],
       }));
-      setMessage("Picture saved on this device.");
+      setMessage("Picture saved");
     });
   }
   if (fatal)
@@ -555,14 +560,7 @@ export default function App() {
             )}
           </header>
         )}
-        {message && (
-          <div className="notice" role="status">
-            <span>{message}</span>
-            <button aria-label="Dismiss message" onClick={() => setMessage("")}>
-              ×
-            </button>
-          </div>
-        )}
+        <Feedback message={notice} dismiss={() => setNotice(null)} />
         {!Capacitor.isNativePlatform() && (
           <p className="preview-note">
             Browser test copy. It is separate from the Android notebook. Export
@@ -577,7 +575,6 @@ export default function App() {
             saved={notebook.customers.find((c) => c.id === customerDraft.id)}
             busy={busy}
             listening={listening}
-            error={message}
             close={() => {
               if (
                 JSON.stringify(customerDraft) !==
@@ -926,11 +923,12 @@ export default function App() {
                 void act(async () => {
                   await openCalendar(task, customer);
                   setMessage(
-                    "Calendar draft opened. Save the event and choose a reminder in your calendar.",
+                    "Calendar opened",
                   );
                 })
               }
               busy={busy}
+              reportError={reportError}
               openCustomer={setSelected}
               saveTitle={(t, title) =>
                 commit((n) => ({
@@ -983,6 +981,7 @@ export default function App() {
             <FieldNames
               labels={s.labels}
               busy={busy}
+              reportError={reportError}
               save={(labels) =>
                 commit((n) => ({ ...n, settings: { ...n.settings, labels } }))
               }
@@ -1017,9 +1016,7 @@ export default function App() {
                         (Capacitor.isNativePlatform()
                           ? "Verified backup saved"
                           : "Backup prepared") +
-                          " (" +
-                          bytes.toLocaleString() +
-                          " bytes). Keep it somewhere safe.",
+                          " (" + bytes.toLocaleString() + " bytes)",
                       );
                     })
                   }
@@ -1032,9 +1029,7 @@ export default function App() {
                     void act(async () => {
                       const bytes = await backup("drive");
                       setMessage(
-                        "Verified backup saved (" +
-                          bytes.toLocaleString() +
-                          " bytes). Check Google Drive to confirm its upload has completed.",
+                        "Backup saved. Check Drive for completed upload.",
                       );
                     })
                   }
@@ -1192,7 +1187,6 @@ export default function App() {
                   }
                 />
               </Field>
-              <p role="alert">{message}</p>
               <div className="actions footer">
                 <button
                   className="primary"
@@ -1314,7 +1308,7 @@ export default function App() {
                   const preferences = readReminderPreferences();
                   writeReminderPreferences({ ...preferences, snoozes: {} });
                   void syncReminders(current.current.notebook).catch(() =>
-                    setMessage(
+                    reportError(
                       "Notebook restored. Check Notifications in Settings.",
                     ),
                   );
@@ -1348,7 +1342,7 @@ export default function App() {
               }));
               setDrawing(false);
             }}
-            report={setMessage}
+            report={reportError}
           />
         )}
         {picture && (

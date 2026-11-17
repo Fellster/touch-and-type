@@ -14,7 +14,7 @@ export default function Reminders({
   report,
 }: {
   changed: () => Promise<void>;
-  report: (s: string) => void;
+  report: (s: string, tone?: "info" | "error") => void;
 }) {
   const [p, setP] = useState(readReminderPreferences);
   const [status, setStatus] = useState({ granted: false, exact: false });
@@ -49,6 +49,7 @@ export default function Reminders({
         e instanceof Error
           ? e.message
           : "Could not update reminders. Try again.",
+        "error",
       );
     } finally {
       setP(readReminderPreferences());
@@ -135,7 +136,7 @@ export default function Reminders({
               void run(async () => {
                 await testNotification();
                 report(
-                  "Test reminder set for 10 seconds from now. Lock your phone or leave Noted to check it.",
+                  "Test reminder in 10 seconds. Check notifications after unlocking.",
                 );
               })
             }

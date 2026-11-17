@@ -66,6 +66,7 @@ type Props = {
   todos: Todo[];
   customers: Customer[];
   busy: boolean;
+  reportError: (text: string) => void;
   toggle: (t: Todo) => void;
   saveTitle: (t: Todo, title: string) => Promise<void>;
   remove: (t: Todo) => void;
@@ -89,8 +90,7 @@ export default function TaskBoard(p: Props) {
 function TaskGroup(p: Props & { name: string; items: Todo[] }) {
   const [items, setItems] = useState(p.items),
     [active, setActive] = useState<Todo | null>(null),
-    [height, setHeight] = useState(0),
-    [error, setError] = useState("");
+    [height, setHeight] = useState(0);
   const saving = useRef(false);
   useEffect(() => {
     if (!saving.current) setItems(p.items);
@@ -107,12 +107,10 @@ function TaskGroup(p: Props & { name: string; items: Todo[] }) {
       className={p.name === "Completed" ? "completed-group" : ""}
     >
       <h2 className={p.name === "Overdue" ? "overdue" : ""}>{p.name}</h2>
-      {error && <p role="alert">{error}</p>}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragStart={({ active }) => {
-          setError("");
           setActive(items.find((t) => t.id === active.id) ?? null);
           setHeight(active.rect.current.initial?.height ?? 0);
         }}
@@ -132,7 +130,7 @@ function TaskGroup(p: Props & { name: string; items: Todo[] }) {
             await p.reorder(next.map((t) => t.id));
           } catch {
             setItems(previous);
-            setError("Could not save the order. Please try again.");
+            p.reportError("Could not save the order. Please try again.");
           } finally {
             saving.current = false;
           }
@@ -190,14 +188,13 @@ export function formatDue(iso: string) {
 function Task(p: Props & { t: Todo }) {
   const { t } = p;
   const [editing, setEditing] = useState(false),
-    [draft, setDraft] = useState(t.title),
-    [editError, setEditError] = useState("");
+    [draft, setDraft] = useState(t.title);
   const saving = useRef(false),
     canceled = useRef(false);
   const save = async () => {
     if (saving.current || canceled.current) return;
     if (!draft.trim()) {
-      setEditError("Enter a task title.");
+      p.reportError("Enter a task title.");
       return;
     }
     if (draft.trim() === t.title) {
@@ -208,9 +205,8 @@ function Task(p: Props & { t: Todo }) {
     try {
       await p.saveTitle(t, draft.trim());
       setEditing(false);
-      setEditError("");
     } catch {
-      setEditError("Could not save. Your edit is still here.");
+      p.reportError("Could not save. Your edit is still here.");
     } finally {
       saving.current = false;
     }
@@ -288,7 +284,6 @@ function Task(p: Props & { t: Todo }) {
                 }
               }}
             />
-            {editError && <p role="alert">{editError}</p>}
           </>
         ) : (
           <p className="pre task-title">{visibleTitle}</p>
@@ -347,8 +342,7 @@ function Task(p: Props & { t: Todo }) {
           disabled={p.busy}
           onClick={() => {
             setDraft(t.title);
-            setEditError("");
-            canceled.current = false;
+                  canceled.current = false;
             setEditing(true);
           }}
         >
